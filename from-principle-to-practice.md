@@ -2,6 +2,20 @@
 
 Rust语言其他的不多强调了，但要强调一点：性能、安全以及实用是Rust追求的根本目标
 
+## 1.1 内存安全方案
+
+###### 主要是针对C语言的不足，但是不包括内存泄漏
+
+禁止对空指针和悬垂指针解引用
+
+读取未初始化的内存
+
+缓冲区溢出
+
+非法释放已经释放或未分配的指针
+
+###### Rust能够安全无缝的沟通C语言
+
 # 2 Rust语言核心原理及案例
 
 ## 2.1 Rust 类型系统
@@ -26,9 +40,37 @@ trait：trait规范了类型的行为
 
 #### 2.2.3.1 基本数据类型
 
-![image-20230131163840335](https://github.com/shiyivei/everything-about-rust/blob/main/images/basic-data-type.png)
+# 1 Rust语言介绍
 
-![image-20230131165942371](https://github.com/shiyivei/everything-about-rust/blob/main/images/integers-and-floats.png)
+Rust语言其他的不多强调了，但要强调一点：性能、安全以及实用是Rust追求的根本目标
+
+# 2 Rust语言核心原理及案例
+
+## 2.1 Rust 类型系统
+
+### 2.2.1 类型系统目标
+
+保证内存安全
+
+保证一致性
+
+表达明确的语义
+
+零成本抽象表达能力
+
+### 2.2.2 Rust如何实现目标
+
+类型：在rust中，一切皆类型
+
+trait：trait规范了类型的行为
+
+### 2.2.3 Rust数据类型
+
+#### 2.2.3.1 基本数据类型
+
+![image-20230131163840335](https://github.com/shiyivei/everything-about-rust/raw/main/images/basic-data-type.png)
+
+![image-20230131165942371](https://github.com/shiyivei/everything-about-rust/raw/main/images/integers-and-floats.png)
 
 **特别说明**
 
@@ -38,7 +80,13 @@ trait：trait规范了类型的行为
 4. rust中的char是unicode标量，占四个字节
 5. 字符串，rust中的字符串有非常多的类型，从根本上讲是为了适应不同的场景，如下：
 
-![image-20230131171425591](https://github.com/shiyivei/everything-about-rust/blob/main/images/string.png)
+![image-20230131171425591](https://github.com/shiyivei/everything-about-rust/raw/main/images/string.png)
+
+在Rust中，字符串比较复杂，涉及底层内存管理知识
+
+![image-20230131182440796](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230131182440796.png)
+
+6 指针类型
 
 #### 2.2.3.2 自定义复合类型
 
@@ -50,8 +98,6 @@ trait：trait规范了类型的行为
 
 # 3 Rust核心库
 
-
-
 # 4 Rust标准库
 
 
@@ -61,4 +107,6 @@ trait：trait规范了类型的行为
 
 
 # 6 知名Rust项目
+
+
 
