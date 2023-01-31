@@ -26,9 +26,9 @@ trait：trait规范了类型的行为
 
 #### 2.2.3.1 基本数据类型
 
-![image-20230131163840335](/Users/qinjianquan/Career/rust-language/everything-about-rust/images/basic-data-type.png)
+![image-20230131163840335](https://github.com/shiyivei/everything-about-rust/blob/main/images/basic-data-type.png)
 
-![image-20230131165942371](/Users/qinjianquan/Career/rust-language/everything-about-rust/images/integers-and-floats.png)
+![image-20230131165942371](https://github.com/shiyivei/everything-about-rust/blob/main/images/integers-and-floats.png)
 
 **特别说明**
 
@@ -38,7 +38,7 @@ trait：trait规范了类型的行为
 4. rust中的char是unicode标量，占四个字节
 5. 字符串，rust中的字符串有非常多的类型，从根本上讲是为了适应不同的场景，如下：
 
-![image-20230131171425591](/Users/qinjianquan/Career/rust-language/everything-about-rust/images/string.png)
+![image-20230131171425591](https://github.com/shiyivei/everything-about-rust/blob/main/images/string.png)
 
 #### 2.2.3.2 自定义复合类型
 
