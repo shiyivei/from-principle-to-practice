@@ -1,3 +1,0 @@
-[workspace]
-
-members = ["tcpserver","tcpclient","http","httpserver"]
