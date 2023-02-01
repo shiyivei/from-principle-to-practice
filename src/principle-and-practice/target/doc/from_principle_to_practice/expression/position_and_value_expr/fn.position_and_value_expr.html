@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="位置上下文"><meta name="keywords" content="rust, rustlang, rust-lang, position_and_value_expr"><title>position_and_value_expr in from_principle_to_practice::expression::position_and_value_expr - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1d6438e53893d4f5.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-b8db113b98e15459.css"><link rel="stylesheet" disabled href="../../../static.files/dark-4b64df8497ac42b0.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-4939169e939b96f8.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-8f89a77f33748381.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><div class="sidebar-elems"><h2><a href="index.html">In from_principle_to_practice::expression::position_and_value_expr</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Function <a href="../../index.html">from_principle_to_practice</a>::<wbr><a href="../index.html">expression</a>::<wbr><a href="index.html">position_and_value_expr</a>::<wbr><a class="fn" href="#">position_and_value_expr</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../../src/from_principle_to_practice/expression/position_and_value_expr.rs.html#78-80">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><div class="item-decl"><pre class="rust fn"><code>pub fn position_and_value_expr()</code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h4 id="位置上下文"><a href="#位置上下文">位置上下文</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>  <span class="comment">// 1. 赋值和复合赋值操作左侧
+    </span><span class="kw">let </span><span class="kw-2">mut </span>a = <span class="number">1</span>;
+    a += <span class="number">1</span>;
+
+    <span class="comment">// 2. 一元借用和解引用操作数所在区域
+    </span><span class="kw">let </span>a = <span class="kw-2">&amp;mut </span><span class="number">7</span>;
+    <span class="kw-2">*</span>a = <span class="number">42</span>;
+    <span class="comment">// 二元借用 b:&amp;&amp;mut i32
+    </span><span class="kw">let </span>b = <span class="kw-2">&amp;</span>a;
+
+    <span class="comment">// 3.字段表达式操作数所在位置
+    </span><span class="kw">struct </span>A {
+        name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    }
+    <span class="kw">let </span>a = A { name: <span class="string">&quot;Alice&quot; </span>};
+    a.name; <span class="comment">//位置上下文
+
+    // 4.数组索引表达式操作数所在区域
+    </span><span class="kw">let </span><span class="kw-2">mut </span>arr = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+    <span class="kw">let </span>b = <span class="kw-2">&amp;mut </span>arr;
+    arr[<span class="number">1</span>];
+
+    <span class="comment">// 5.任意隐式借用操作数所在区域
+    </span><span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+    v.push(<span class="number">4</span>);
+
+    <span class="comment">// 6.let 初始化
+    </span><span class="kw">let </span>a: i32;
+
+    <span class="comment">// 7.if let/while let/match 的匹配表达式所在的区域
+    </span><span class="kw">let </span>dish = (<span class="string">&quot;ham&quot;</span>, <span class="string">&quot;eggs&quot;</span>);
+    <span class="kw">if let </span>(<span class="string">&quot;bacon&quot;</span>, b) = dish {
+        <span class="comment">// (&quot;bacon&quot;,b) 就是位置上下文
+        </span><span class="macro">println!</span>(<span class="string">&quot;bacon is served {}&quot;</span>, b);
+    } <span class="kw">else </span>{
+        <span class="macro">println!</span>(<span class="string">&quot;No bacon will be served&quot;</span>)
+    }
+
+    <span class="comment">//match （位置上下文）/ while let（位置上下文） 同理
+
+    // 结构体更新语法中的base表达式
+    </span><span class="kw">struct </span>Point3d {
+        x: i32,
+        y: i32,
+        z: i32,
+    }
+
+    <span class="kw">let </span><span class="kw-2">mut </span>base = Point3d { x: <span class="number">1</span>, y: <span class="number">2</span>, z: <span class="number">3 </span>};
+    <span class="kw">let </span>y_ref = <span class="kw-2">&amp;mut </span>base.y;
+
+    Point3d {
+        y: <span class="number">0</span>,
+        z: <span class="number">10</span>,
+        ..base
+    };
+
+    <span class="comment">// Rust 所有权语语义在表达式上的体现
+
+    </span><span class="kw">let </span>stack_a = <span class="number">42</span>;
+    <span class="kw">let </span>stack_b = stack_a; <span class="comment">// 位置表达式到值上下文中，发生了copy
+
+    </span>stack_a;
+
+    <span class="kw">let </span>heap_a = <span class="string">&quot;hello&quot;</span>.to_string();
+    <span class="kw">let </span>heap_b = heap_a; <span class="comment">// 位置表达式到值上下文中，发生了move
+
+//     heap_a; error
+</span></code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0A%20%20%2F%2F%201.%20%E8%B5%8B%E5%80%BC%E5%92%8C%E5%A4%8D%E5%90%88%E8%B5%8B%E5%80%BC%E6%93%8D%E4%BD%9C%E5%B7%A6%E4%BE%A7%0Afn%20main()%20%7B%0Alet%20mut%20a%20%3D%201%3B%0A%20%20%20%20a%20%2B%3D%201%3B%0A%0A%20%20%20%20%2F%2F%202.%20%E4%B8%80%E5%85%83%E5%80%9F%E7%94%A8%E5%92%8C%E8%A7%A3%E5%BC%95%E7%94%A8%E6%93%8D%E4%BD%9C%E6%95%B0%E6%89%80%E5%9C%A8%E5%8C%BA%E5%9F%9F%0A%20%20%20%20let%20a%20%3D%20%26mut%207%3B%0A%20%20%20%20*a%20%3D%2042%3B%0A%20%20%20%20%2F%2F%20%E4%BA%8C%E5%85%83%E5%80%9F%E7%94%A8%20b%3A%26%26mut%20i32%0A%20%20%20%20let%20b%20%3D%20%26a%3B%0A%0A%20%20%20%20%2F%2F%203.%E5%AD%97%E6%AE%B5%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%93%8D%E4%BD%9C%E6%95%B0%E6%89%80%E5%9C%A8%E4%BD%8D%E7%BD%AE%0A%20%20%20%20struct%20A%20%7B%0A%20%20%20%20%20%20%20%20name%3A%20%26'static%20str%2C%0A%20%20%20%20%7D%0A%20%20%20%20let%20a%20%3D%20A%20%7B%20name%3A%20%22Alice%22%20%7D%3B%0A%20%20%20%20a.name%3B%20%2F%2F%E4%BD%8D%E7%BD%AE%E4%B8%8A%E4%B8%8B%E6%96%87%0A%0A%20%20%20%20%2F%2F%204.%E6%95%B0%E7%BB%84%E7%B4%A2%E5%BC%95%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%93%8D%E4%BD%9C%E6%95%B0%E6%89%80%E5%9C%A8%E5%8C%BA%E5%9F%9F%0A%20%20%20%20let%20mut%20arr%20%3D%20%5B1%2C%202%2C%203%5D%3B%0A%20%20%20%20let%20b%20%3D%20%26mut%20arr%3B%0A%20%20%20%20arr%5B1%5D%3B%0A%0A%20%20%20%20%2F%2F%205.%E4%BB%BB%E6%84%8F%E9%9A%90%E5%BC%8F%E5%80%9F%E7%94%A8%E6%93%8D%E4%BD%9C%E6%95%B0%E6%89%80%E5%9C%A8%E5%8C%BA%E5%9F%9F%0A%20%20%20%20let%20mut%20v%20%3D%20vec!%5B1%2C%202%2C%203%5D%3B%0A%20%20%20%20v.push(4)%3B%0A%0A%20%20%20%20%2F%2F%206.let%20%E5%88%9D%E5%A7%8B%E5%8C%96%0A%20%20%20%20let%20a%3A%20i32%3B%0A%0A%20%20%20%20%2F%2F%207.if%20let%2Fwhile%20let%2Fmatch%20%E7%9A%84%E5%8C%B9%E9%85%8D%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%89%80%E5%9C%A8%E7%9A%84%E5%8C%BA%E5%9F%9F%0A%20%20%20%20let%20dish%20%3D%20(%22ham%22%2C%20%22eggs%22)%3B%0A%20%20%20%20if%20let%20(%22bacon%22%2C%20b)%20%3D%20dish%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20(%22bacon%22%2Cb)%20%E5%B0%B1%E6%98%AF%E4%BD%8D%E7%BD%AE%E4%B8%8A%E4%B8%8B%E6%96%87%0A%20%20%20%20%20%20%20%20println!(%22bacon%20is%20served%20%7B%7D%22%2C%20b)%3B%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20println!(%22No%20bacon%20will%20be%20served%22)%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2Fmatch%20%EF%BC%88%E4%BD%8D%E7%BD%AE%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%89%2F%20while%20let%EF%BC%88%E4%BD%8D%E7%BD%AE%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%89%20%E5%90%8C%E7%90%86%0A%0A%20%20%20%20%2F%2F%20%E7%BB%93%E6%9E%84%E4%BD%93%E6%9B%B4%E6%96%B0%E8%AF%AD%E6%B3%95%E4%B8%AD%E7%9A%84base%E8%A1%A8%E8%BE%BE%E5%BC%8F%0A%20%20%20%20struct%20Point3d%20%7B%0A%20%20%20%20%20%20%20%20x%3A%20i32%2C%0A%20%20%20%20%20%20%20%20y%3A%20i32%2C%0A%20%20%20%20%20%20%20%20z%3A%20i32%2C%0A%20%20%20%20%7D%0A%0A%20%20%20%20let%20mut%20base%20%3D%20Point3d%20%7B%20x%3A%201%2C%20y%3A%202%2C%20z%3A%203%20%7D%3B%0A%20%20%20%20let%20y_ref%20%3D%20%26mut%20base.y%3B%0A%0A%20%20%20%20Point3d%20%7B%0A%20%20%20%20%20%20%20%20y%3A%200%2C%0A%20%20%20%20%20%20%20%20z%3A%2010%2C%0A%20%20%20%20%20%20%20%20..base%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20%2F%2F%20Rust%20%E6%89%80%E6%9C%89%E6%9D%83%E8%AF%AD%E8%AF%AD%E4%B9%89%E5%9C%A8%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8A%E7%9A%84%E4%BD%93%E7%8E%B0%0A%0A%20%20%20%20let%20stack_a%20%3D%2042%3B%0A%20%20%20%20let%20stack_b%20%3D%20stack_a%3B%20%2F%2F%20%E4%BD%8D%E7%BD%AE%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%88%B0%E5%80%BC%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%AD%EF%BC%8C%E5%8F%91%E7%94%9F%E4%BA%86copy%0A%0A%20%20%20%20stack_a%3B%0A%0A%20%20%20%20let%20heap_a%20%3D%20%22hello%22.to_string()%3B%0A%20%20%20%20let%20heap_b%20%3D%20heap_a%3B%20%2F%2F%20%E4%BD%8D%E7%BD%AE%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%88%B0%E5%80%BC%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%AD%EF%BC%8C%E5%8F%91%E7%94%9F%E4%BA%86move%0A%0A%2F%2F%20%20%20%20%20heap_a%3B%20error%0A%7D&amp;edition=2021">Run</a></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="from_principle_to_practice" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (c5d82ed7a 2022-11-19)" data-search-js="search-df80cc3cb87b6482.js" data-settings-js="settings-7e1cf5cc683233f7.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

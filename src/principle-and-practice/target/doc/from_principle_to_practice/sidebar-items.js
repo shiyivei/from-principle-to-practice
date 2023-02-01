@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["ch02","第二章: Rust核心原理及案例"]]};
+window.SIDEBAR_ITEMS = {"mod":[["expression","Rust 表达式"],["lexical_structure","Rust 词法结构"],["type_system","Rust 类型系统"]]};

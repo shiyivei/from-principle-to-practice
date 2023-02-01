@@ -4,4 +4,6 @@
     test(attr(allow(dead_code, deprecated, unused_variables, unused_mut)))
 )]
 
-pub mod ch02;
+pub mod expression;
+pub mod lexical_structure;
+pub mod type_system;
