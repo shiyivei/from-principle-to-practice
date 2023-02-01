@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"from_principle_to_practice":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.Send.html\" title=\"trait core::marker::Send\">Send</a> for <a class=\"struct\" href=\"from_principle_to_practice/ch02/path/struct.S.html\" title=\"struct from_principle_to_practice::ch02::path::S\">S</a>",1,["from_principle_to_practice::ch02::path::S"]]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

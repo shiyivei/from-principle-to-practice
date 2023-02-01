@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["main","理论:rust通过栈来管理堆内存,所以在编译期就需要知道类型的大小"]]};

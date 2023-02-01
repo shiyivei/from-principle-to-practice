@@ -4,7 +4,7 @@ Rust语言其他的不多强调了，但要强调一点：性能、安全以及�
 
 ## 1.1 内存安全方案
 
-###### 主要是针对C语言的不足，但是不包括内存泄漏
+### 1.1.1 Rust针对C语言的不足
 
 禁止对空指针和悬垂指针解引用
 
@@ -14,39 +14,55 @@ Rust语言其他的不多强调了，但要强调一点：性能、安全以及�
 
 非法释放已经释放或未分配的指针
 
-###### Rust能够安全无缝的沟通C语言
+### 1.1.2 安全无缝的沟通C语言
+
+通过C-ABI零成本和C语言打交道
+
+划分了Safe Rust和Unsafe Rust
 
 # 2 Rust语言核心原理及案例
 
-## 2.1 Rust 类型系统
+## 2.1 Rust 编译过程
 
-### 2.2.1 类型系统目标
+![](/Users/qinjianquan/Career/rust-language/from-principle-to-practice/images/compile-process.png)
 
-保证内存安全
+**特别说明**
 
-保证一致性
+大部分语言会将词条流解析到的抽象思维语法树直接转为机器码，但是rust会将其转为高级中间语言以及中级中间语言、LLVM中间语言，交由LLVM后端生成机器码
 
-表达明确的语义
+高级中间语言：类型检查、方法查找
 
-零成本抽象表达能力
+中级中间语言：借用检查、优化、代码生成、泛型单态化等工作
 
-### 2.2.2 Rust如何实现目标
+版次差异在到达中级中间语言时就会消除
 
-类型：在rust中，一切皆类型
+## 2.2 Rust词法结构
 
-trait：trait规范了类型的行为
+词法结构对于任何一种语言来说都非常重要，因为它不光是构成语言的必要部分，而且也关乎到语言如何解析和编译。在rust中，词法结构中的词条还涉及元编程
 
-### 2.2.3 Rust数据类型
+### 2.2.1 六大词法结构
 
-#### 2.2.3.1 基本数据类型
+关键字：严格关键字、保留字、弱关键字
 
-# 1 Rust语言介绍
+标识符：不以数字开头的ASCII字符注释
 
-Rust语言其他的不多强调了，但要强调一点：性能、安全以及实用是Rust追求的根本目标
+![image-20230201085836299](/Users/qinjianquan/Career/rust-language/from-principle-to-practice/images/identifier.png)
 
-# 2 Rust语言核心原理及案例
+注释：Rust可以使用注释直接生成文档，非常友好
 
-## 2.1 Rust 类型系统
+空白：空白不表示任何含义，如换行等
+
+词条：词条在写宏的时候非常有用
+
+![image-20230201093310102](/Users/qinjianquan/Career/rust-language/from-principle-to-practice/images/entry.png)
+
+![image-20230201095708674](/Users/qinjianquan/Career/rust-language/from-principle-to-practice/images/macro_use_entry.png)
+
+路径
+
+
+
+## 2.2 Rust 类型系统
 
 ### 2.2.1 类型系统目标
 
