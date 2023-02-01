@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["generic","泛型函数"]]};
