@@ -396,7 +396,7 @@ println!("{},{}", sum1, sum2);
 
 类型：在rust中，一切皆类型
 
-trait：trait规范了类型的行为
+行为：Rust使用trait规范了类型的行为
 
 ### 2.6.3 Rust数据类型
 
@@ -533,7 +533,7 @@ println!("{:?}", std::mem::size_of::<A>());
 println!("{:?}", std::mem::size_of::<B>());
 ```
 
-#### 2.6.2.3 容器类型
+#### 2.6.3.3 容器类型
 
 ![image-20230201184238041](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230201184238041.png)
 
@@ -592,17 +592,119 @@ println!("{:?}", std::mem::size_of::<B>());
 ### 3. 容器UnsafeCell 是上述两种容器的底层实现
 ````
 
-#### 2.6.2.4 泛型
+#### 2.6.3.4 泛型
 
-#### 2.6.2.5 特定类型
+在Rust中,泛型是零成本的，因为会在编译期就单态化（在实际调用的位置生成具体类型相关的的代码），也叫静态分发
+
+```
+fn foo<T>(x: T) -> T {
+    x
+}
+fn main() {
+    assert_eq!(foo(1), 1);
+    assert_eq!(foo("hello"), "hello");
+
+    // 上述的函数会单态化为两个不同参数类型的函数
+    fn foo_1(x: i32) -> i32 {
+        x
+    }
+    fn foo_2(x: &'static str) -> &'static str {
+        x
+    }
+
+    foo_1(1);
+    foo_2("2");
+
+    // Rust根据上下文有一定的推断能力，但是推断不出来时需要手工通过turbofish指定
+
+    // foo(1) 等价于 foo::<i32>(1);
+    // foo("hello") 等价于 foo::<&'static str>("hello");
+}
+```
+
+#### 2.6.3.5 特定类型
+
+特定类型是指专门有特殊用途的类型，Rust中有两种
+
+1. PhantomData<T>, 幻影类型：一般用于Unsafe rust的安全抽象或者占位
+2. Pin<T>,固定类型：为了支持异步开发特意引进，防止被引用的值发生移动的类型
+
+## 2.7 类型的行为
+
+### 2.7.1 trait
+
+1. trait 含义
+
+本质上是定义了公共的方法，以便达到某个目的。任何类型想要达到某个目的，有两种方式，一种是自己定义方法去实现，；另一种就是接入到trait系统中来，实现trait中一定定义好签名的方法。第二种会让代码更清楚明了和有约束性
+
+2. trait实现
+
+trait中也可以定义默认实现和定义关联类型（一般是返回值类型中的错误类型）
+
+```
+
+//单个类型的解析
+   let four: u32 = "4".parse().unwrap();
+   println!("{}", four);
+
+   // 元组结构体的解析
+   // 解析思路是先拿到结构体中的数字，然后使用from_str转化
+   use std::str::FromStr;
+   #[derive(Debug, PartialEq)]
+   struct Point(i32, i32);
+
+   #[derive(Debug, PartialEq, Eq)]
+   struct ParsePointError;
+
+   // 使用trait 提供的公共的方法来解析
+   // trait中有个方法是from_str,参数是字符串切片,返回值是目标类型实例
+   impl FromStr for Point {
+       type Err = ParsePointError;
+       fn from_str(s: &str) -> Result<Self, Self::Err> {
+           // 实现过程因类型而异
+           let (x, y) = s
+               .strip_prefix('(')
+               .and_then(|s| s.strip_suffix(')'))
+               .and_then(|s| s.split_once(','))
+               .ok_or(ParsePointError)?;
+
+           let x_fromstr = x.parse::<i32>().map_err(|_| ParsePointError)?;
+           let y_fromstr = y.parse::<i32>().map_err(|_| ParsePointError)?;
+
+           // Ok中包含了实例
+           Ok(Point(x_fromstr, y_fromstr))
+       }
+   }
+
+   let p = "(1,2)".parse::<Point>();
+   assert_eq!(p.unwrap(), Point(1, 2))
+```
+
+3. trait是一种特设多态
+
+Ad-hoc多态：一个接口多个实现
+
+4. trait掌控了类型的行为逻辑
+
+例如把一个变量赋值给另一个变量时，默认情况下时发生move语义，也就是发生所有权转移，原来的变量不再有数据的所有权
+
+但是由于Copy trait的存在，凡是实现了Copy trait的类型，在发生上述行为时，所有权没有发生转移，而是为新的变量重新拷贝了一份数据（发生在栈上）
+
+5. trait 理论来源
+
+Rust类型系统遵循的时仿射类型理论，即系统中用于标识内存等资源，最多只能被使用一次。Copy trait 在整个逻辑的推理中起了很大作用
+
+还有在rust编译器内使用了一个叫做chalk的trait系统，它是一个类似于逻辑编程语言Prolog的一个逻辑推理引擎
+
+6. trait 分类
+
+![image-20230201230453241](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230201230453241.png)
 
 # 3 Rust核心库
 
 ```
 use core::mem::MaybeUninit;
 ```
-
-
 
 # 4 Rust标准库
 
