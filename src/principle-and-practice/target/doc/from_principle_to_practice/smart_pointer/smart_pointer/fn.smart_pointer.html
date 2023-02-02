@@ -1,0 +1,140 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Deref trait"><meta name="keywords" content="rust, rustlang, rust-lang, smart_pointer"><title>smart_pointer in from_principle_to_practice::smart_pointer::smart_pointer - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1d6438e53893d4f5.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-b8db113b98e15459.css"><link rel="stylesheet" disabled href="../../../static.files/dark-4b64df8497ac42b0.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-4939169e939b96f8.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-8f89a77f33748381.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><div class="sidebar-elems"><h2><a href="index.html">In from_principle_to_practice::smart_pointer::smart_pointer</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Function <a href="../../index.html">from_principle_to_practice</a>::<wbr><a href="../index.html">smart_pointer</a>::<wbr><a href="index.html">smart_pointer</a>::<wbr><a class="fn" href="#">smart_pointer</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../../src/from_principle_to_practice/smart_pointer/smart_pointer.rs.html#150">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><div class="item-decl"><pre class="rust fn"><code>pub fn smart_pointer()</code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h4 id="deref-trait"><a href="#deref-trait">Deref trait</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>
+<span class="comment">// deref 方法定义了解引用的行为
+/*
+pub trait Deref {
+    type Target:?Size;
+    fn deref(&amp;self) -&gt; &amp;Self::Target;
+}
+
+// Box如何实现deref trait
+
+impl&lt;T:?sized&gt; Deref for Box&lt;T&gt; {
+
+   type Target = T;
+
+   fn deref(&amp;self) -&gt; &amp;T {
+       //等价于 &amp;*(*self),第一个*，解开Box类型的引用，第二个*，解开Box,得到原始类型T，&amp;则是对原始类型的引用
+       &amp;**self
+   }
+}
+*/
+ // 定义自己的智能指针: 让指针可以自动解引用
+   </span><span class="kw">use </span>std::ops::Deref;
+   <span class="comment">// 定义一个泛型单元组结构体
+   </span><span class="kw">struct </span>MySP&lt;T&gt;(T);
+
+   <span class="comment">// 实现一个new方法
+   </span><span class="kw">impl</span>&lt;T&gt; MySP&lt;T&gt; {
+       <span class="kw">fn </span>new(s: T) -&gt; MySP&lt;T&gt; {
+           MySP(s)
+       }
+   }
+   <span class="comment">// 为类型实现Deref trait 现在类型MySP就是一个自定义的智能指针了
+   </span><span class="kw">impl</span>&lt;T&gt; Deref <span class="kw">for </span>MySP&lt;T&gt; {
+       <span class="kw">type </span>Target = T;
+       <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+           <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+       </span>}
+   }
+
+   <span class="comment">// 调用
+   </span><span class="kw">let </span>x = <span class="number">5</span>;
+   <span class="kw">let </span>y = MySP::new(x);
+
+   <span class="macro">assert_eq!</span>(<span class="number">5</span>, x);
+   <span class="macro">assert_eq!</span>(<span class="number">5</span>, <span class="kw-2">*</span>y);
+
+   <span class="comment">// 1. 自动解引用 点调用操作
+   // 自定义一个类型
+   </span><span class="attr">#[derive(Copy, Clone)]
+   </span><span class="kw">struct </span>User {
+       name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+   }
+
+   <span class="kw">impl </span>User {
+       <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+           <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>.name);
+       }
+   }
+
+   <span class="comment">// 调用
+
+   </span><span class="kw">let </span>u = User { name: <span class="string">&quot;Alex&quot; </span>};
+   <span class="comment">// 原来的调用方式
+
+   </span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, u.name);
+   <span class="comment">// 使用自定义的智能指针包裹
+   </span><span class="kw">let </span>y = MySP::new(u);
+
+   <span class="comment">// 包裹后的调用方式
+   // 这里智能指针实际上自动进行了解引用,获取了里面的值，然后用值进行关联函数调用
+
+   </span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, y.name);
+   <span class="comment">// 手动解引用
+   </span><span class="kw">let </span>z = <span class="kw-2">*</span>y;
+
+   <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, z.name);
+
+   <span class="comment">// 结论：使用类型直接调用字段 = 智能指针解引用调用 = 手动解引用调用
+
+   // 2. 自动解引用 函数参数
+   </span><span class="kw">fn </span>takes_str(s: <span class="kw-2">&amp;</span>str) {
+       <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, s);
+   }
+
+   <span class="kw">let </span>s = String::from(<span class="string">&quot;hello&quot;</span>);
+   <span class="comment">// String 也是一个智能指针，它包裹了 str
+   // 自动解引用为原始类型str后要再加&amp;
+
+   // 调用
+   </span>takes_str(<span class="kw-2">&amp;</span>s);
+
+   <span class="comment">// 标准库中为String类型实现了Deref trait
+   /*
+   impl ops::Deref for String {
+       type Target = str;
+
+       #[inline]
+       fn deref(&amp;self) -&gt; &amp;str {
+           unsafe { str::from_utf8_unchecked(&amp;self.vec) }
+       }
+   }
+   */
+
+   // 自动解引用需要注意的地方
+   // 使用*x 解引用等价于 *（x.deref)
+
+   </span><span class="kw">let </span>s = Box::new(<span class="string">&quot;world&quot;</span>);
+   <span class="kw">let </span>ref_s1 = <span class="kw-2">*</span>s;
+   <span class="kw">let </span>ref_s2 = <span class="kw-2">*</span>(s.deref());
+
+   <span class="macro">assert_eq!</span>(ref_s1, ref_s2);
+
+   <span class="comment">// 自动解引用等价于 x.deref()
+
+
+    // 标准库中给泛型T实现的 Deref trait
+   /*
+   impl&lt;T: ?Sized&gt; const Deref for &amp;T {
+       type Target = T;
+
+       fn deref(&amp;self) -&gt; &amp;T {
+           *self
+       }
+   }
+
+   impl&lt;T: ?Sized&gt; !DerefMut for &amp;T {}
+
+   ** 在日常开发中非常实用
+   ** 当我们拥有可变引用T时如果还想使用T,则可以自动解引用，比如点调用
+   impl&lt;T: ?Sized&gt; const Deref for &amp;mut T {
+       type Target = T;
+
+       fn deref(&amp;self) -&gt; &amp;T {
+           *self
+       }
+   }
+   */
+</span></code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0A%0A%2F%2F%20deref%20%E6%96%B9%E6%B3%95%E5%AE%9A%E4%B9%89%E4%BA%86%E8%A7%A3%E5%BC%95%E7%94%A8%E7%9A%84%E8%A1%8C%E4%B8%BA%0Afn%20main()%20%7B%0A%2F*%0Apub%20trait%20Deref%20%7B%0A%20%20%20%20type%20Target%3A%3FSize%3B%0A%20%20%20%20fn%20deref(%26self)%20-%3E%20%26Self%3A%3ATarget%3B%0A%7D%0A%0A%2F%2F%20Box%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0deref%20trait%0A%0Aimpl%3CT%3A%3Fsized%3E%20Deref%20for%20Box%3CT%3E%20%7B%0A%0A%20%20%20type%20Target%20%3D%20T%3B%0A%0A%20%20%20fn%20deref(%26self)%20-%3E%20%26T%20%7B%0A%20%20%20%20%20%20%20%2F%2F%E7%AD%89%E4%BB%B7%E4%BA%8E%20%26*(*self)%2C%E7%AC%AC%E4%B8%80%E4%B8%AA*%EF%BC%8C%E8%A7%A3%E5%BC%80Box%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%BC%95%E7%94%A8%EF%BC%8C%E7%AC%AC%E4%BA%8C%E4%B8%AA*%EF%BC%8C%E8%A7%A3%E5%BC%80Box%2C%E5%BE%97%E5%88%B0%E5%8E%9F%E5%A7%8B%E7%B1%BB%E5%9E%8BT%EF%BC%8C%26%E5%88%99%E6%98%AF%E5%AF%B9%E5%8E%9F%E5%A7%8B%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%BC%95%E7%94%A8%0A%20%20%20%20%20%20%20%26**self%0A%20%20%20%7D%0A%7D%0A*%2F%0A%20%2F%2F%20%E5%AE%9A%E4%B9%89%E8%87%AA%E5%B7%B1%E7%9A%84%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%3A%20%E8%AE%A9%E6%8C%87%E9%92%88%E5%8F%AF%E4%BB%A5%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%0A%20%20%20use%20std%3A%3Aops%3A%3ADeref%3B%0A%20%20%20%2F%2F%20%E5%AE%9A%E4%B9%89%E4%B8%80%E4%B8%AA%E6%B3%9B%E5%9E%8B%E5%8D%95%E5%85%83%E7%BB%84%E7%BB%93%E6%9E%84%E4%BD%93%0A%20%20%20struct%20MySP%3CT%3E(T)%3B%0A%0A%20%20%20%2F%2F%20%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AAnew%E6%96%B9%E6%B3%95%0A%20%20%20impl%3CT%3E%20MySP%3CT%3E%20%7B%0A%20%20%20%20%20%20%20fn%20new(s%3A%20T)%20-%3E%20MySP%3CT%3E%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20MySP(s)%0A%20%20%20%20%20%20%20%7D%0A%20%20%20%7D%0A%20%20%20%2F%2F%20%E4%B8%BA%E7%B1%BB%E5%9E%8B%E5%AE%9E%E7%8E%B0Deref%20trait%20%E7%8E%B0%E5%9C%A8%E7%B1%BB%E5%9E%8BMySP%E5%B0%B1%E6%98%AF%E4%B8%80%E4%B8%AA%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E4%BA%86%0A%20%20%20impl%3CT%3E%20Deref%20for%20MySP%3CT%3E%20%7B%0A%20%20%20%20%20%20%20type%20Target%20%3D%20T%3B%0A%20%20%20%20%20%20%20fn%20deref(%26self)%20-%3E%20%26T%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%26self.0%0A%20%20%20%20%20%20%20%7D%0A%20%20%20%7D%0A%0A%20%20%20%2F%2F%20%E8%B0%83%E7%94%A8%0A%20%20%20let%20x%20%3D%205%3B%0A%20%20%20let%20y%20%3D%20MySP%3A%3Anew(x)%3B%0A%0A%20%20%20assert_eq!(5%2C%20x)%3B%0A%20%20%20assert_eq!(5%2C%20*y)%3B%0A%0A%20%20%20%2F%2F%201.%20%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%20%E7%82%B9%E8%B0%83%E7%94%A8%E6%93%8D%E4%BD%9C%0A%20%20%20%2F%2F%20%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%80%E4%B8%AA%E7%B1%BB%E5%9E%8B%0A%20%20%20%23%5Bderive(Copy%2C%20Clone)%5D%0A%20%20%20struct%20User%20%7B%0A%20%20%20%20%20%20%20name%3A%20%26'static%20str%2C%0A%20%20%20%7D%0A%0A%20%20%20impl%20User%20%7B%0A%20%20%20%20%20%20%20fn%20name(%26self)%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20println!(%22%7B%3A%3F%7D%22%2C%20self.name)%3B%0A%20%20%20%20%20%20%20%7D%0A%20%20%20%7D%0A%0A%20%20%20%2F%2F%20%E8%B0%83%E7%94%A8%0A%0A%20%20%20let%20u%20%3D%20User%20%7B%20name%3A%20%22Alex%22%20%7D%3B%0A%20%20%20%2F%2F%20%E5%8E%9F%E6%9D%A5%E7%9A%84%E8%B0%83%E7%94%A8%E6%96%B9%E5%BC%8F%0A%0A%20%20%20println!(%22%7B%7D%22%2C%20u.name)%3B%0A%20%20%20%2F%2F%20%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E5%8C%85%E8%A3%B9%0A%20%20%20let%20y%20%3D%20MySP%3A%3Anew(u)%3B%0A%0A%20%20%20%2F%2F%20%E5%8C%85%E8%A3%B9%E5%90%8E%E7%9A%84%E8%B0%83%E7%94%A8%E6%96%B9%E5%BC%8F%0A%20%20%20%2F%2F%20%E8%BF%99%E9%87%8C%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E5%AE%9E%E9%99%85%E4%B8%8A%E8%87%AA%E5%8A%A8%E8%BF%9B%E8%A1%8C%E4%BA%86%E8%A7%A3%E5%BC%95%E7%94%A8%2C%E8%8E%B7%E5%8F%96%E4%BA%86%E9%87%8C%E9%9D%A2%E7%9A%84%E5%80%BC%EF%BC%8C%E7%84%B6%E5%90%8E%E7%94%A8%E5%80%BC%E8%BF%9B%E8%A1%8C%E5%85%B3%E8%81%94%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%0A%0A%20%20%20println!(%22%7B%7D%22%2C%20y.name)%3B%0A%20%20%20%2F%2F%20%E6%89%8B%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%0A%20%20%20let%20z%20%3D%20*y%3B%0A%0A%20%20%20println!(%22%7B%7D%22%2C%20z.name)%3B%0A%0A%20%20%20%2F%2F%20%E7%BB%93%E8%AE%BA%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E7%9B%B4%E6%8E%A5%E8%B0%83%E7%94%A8%E5%AD%97%E6%AE%B5%20%3D%20%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E8%A7%A3%E5%BC%95%E7%94%A8%E8%B0%83%E7%94%A8%20%3D%20%E6%89%8B%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%E8%B0%83%E7%94%A8%0A%0A%20%20%20%2F%2F%202.%20%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%20%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%0A%20%20%20fn%20takes_str(s%3A%20%26str)%20%7B%0A%20%20%20%20%20%20%20println!(%22%7B%7D%22%2C%20s)%3B%0A%20%20%20%7D%0A%0A%20%20%20let%20s%20%3D%20String%3A%3Afrom(%22hello%22)%3B%0A%20%20%20%2F%2F%20String%20%E4%B9%9F%E6%98%AF%E4%B8%80%E4%B8%AA%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%EF%BC%8C%E5%AE%83%E5%8C%85%E8%A3%B9%E4%BA%86%20str%0A%20%20%20%2F%2F%20%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%E4%B8%BA%E5%8E%9F%E5%A7%8B%E7%B1%BB%E5%9E%8Bstr%E5%90%8E%E8%A6%81%E5%86%8D%E5%8A%A0%26%0A%0A%20%20%20%2F%2F%20%E8%B0%83%E7%94%A8%0A%20%20%20takes_str(%26s)%3B%0A%0A%20%20%20%2F%2F%20%E6%A0%87%E5%87%86%E5%BA%93%E4%B8%AD%E4%B8%BAString%E7%B1%BB%E5%9E%8B%E5%AE%9E%E7%8E%B0%E4%BA%86Deref%20trait%0A%20%20%20%2F*%0A%20%20%20impl%20ops%3A%3ADeref%20for%20String%20%7B%0A%20%20%20%20%20%20%20type%20Target%20%3D%20str%3B%0A%0A%20%20%20%20%20%20%20%23%5Binline%5D%0A%20%20%20%20%20%20%20fn%20deref(%26self)%20-%3E%20%26str%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20unsafe%20%7B%20str%3A%3Afrom_utf8_unchecked(%26self.vec)%20%7D%0A%20%20%20%20%20%20%20%7D%0A%20%20%20%7D%0A%20%20%20*%2F%0A%0A%20%20%20%2F%2F%20%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84%E5%9C%B0%E6%96%B9%0A%20%20%20%2F%2F%20%E4%BD%BF%E7%94%A8*x%20%E8%A7%A3%E5%BC%95%E7%94%A8%E7%AD%89%E4%BB%B7%E4%BA%8E%20*%EF%BC%88x.deref)%0A%0A%20%20%20let%20s%20%3D%20Box%3A%3Anew(%22world%22)%3B%0A%20%20%20let%20ref_s1%20%3D%20*s%3B%0A%20%20%20let%20ref_s2%20%3D%20*(s.deref())%3B%0A%0A%20%20%20assert_eq!(ref_s1%2C%20ref_s2)%3B%0A%0A%20%20%20%2F%2F%20%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%E7%AD%89%E4%BB%B7%E4%BA%8E%20x.deref()%0A%0A%0A%20%20%20%20%2F%2F%20%E6%A0%87%E5%87%86%E5%BA%93%E4%B8%AD%E7%BB%99%E6%B3%9B%E5%9E%8BT%E5%AE%9E%E7%8E%B0%E7%9A%84%20Deref%20trait%0A%20%20%20%2F*%0A%20%20%20impl%3CT%3A%20%3FSized%3E%20const%20Deref%20for%20%26T%20%7B%0A%20%20%20%20%20%20%20type%20Target%20%3D%20T%3B%0A%0A%20%20%20%20%20%20%20fn%20deref(%26self)%20-%3E%20%26T%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20*self%0A%20%20%20%20%20%20%20%7D%0A%20%20%20%7D%0A%0A%20%20%20impl%3CT%3A%20%3FSized%3E%20!DerefMut%20for%20%26T%20%7B%7D%0A%0A%20%20%20**%20%E5%9C%A8%E6%97%A5%E5%B8%B8%E5%BC%80%E5%8F%91%E4%B8%AD%E9%9D%9E%E5%B8%B8%E5%AE%9E%E7%94%A8%0A%20%20%20**%20%E5%BD%93%E6%88%91%E4%BB%AC%E6%8B%A5%E6%9C%89%E5%8F%AF%E5%8F%98%E5%BC%95%E7%94%A8T%E6%97%B6%E5%A6%82%E6%9E%9C%E8%BF%98%E6%83%B3%E4%BD%BF%E7%94%A8T%2C%E5%88%99%E5%8F%AF%E4%BB%A5%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8%EF%BC%8C%E6%AF%94%E5%A6%82%E7%82%B9%E8%B0%83%E7%94%A8%0A%20%20%20impl%3CT%3A%20%3FSized%3E%20const%20Deref%20for%20%26mut%20T%20%7B%0A%20%20%20%20%20%20%20type%20Target%20%3D%20T%3B%0A%0A%20%20%20%20%20%20%20fn%20deref(%26self)%20-%3E%20%26T%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20*self%0A%20%20%20%20%20%20%20%7D%0A%20%20%20%7D%0A%20%20%20*%2F%0A%7D&amp;edition=2021">Run</a></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="from_principle_to_practice" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (c5d82ed7a 2022-11-19)" data-search-js="search-df80cc3cb87b6482.js" data-settings-js="settings-7e1cf5cc683233f7.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

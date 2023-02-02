@@ -1126,6 +1126,210 @@ fn counter(i: i32) -> impl FnMut(i32) -> i32 {
 1. 可辩驳
 2. 不可辩驳
 
+```
+// 1. let 声明中的匹配
+struct Point {
+        x: i32,
+        y: i32,
+    }
+
+    let (a, b) = (1, 2);
+
+    let Point { x, y } = Point { x: 3, y: 4 };
+
+    assert_eq!(1, a);
+    assert_eq!(2, b);
+    assert_eq!(3, x);
+    assert_eq!(4, y);
+
+    // 2.函数与闭包参数
+
+    fn sum(x: String, ref y: String) -> String {
+        x + y
+    }
+
+    let s = sum("1".to_owned(), "2".to_owned());
+    assert_eq!(s, "12".to_owned());
+
+    // 辅助理解 ref
+
+    {
+        let a = 42;
+        let ref b = a;
+        let c = &a;
+
+        assert_eq!(b, c);
+
+        let mut a = [1, 2, 3];
+        let ref mut b = a;
+
+        b[0] = 0;
+
+        assert_eq!(a, [0, 2, 3])
+    }
+
+    // 3. match 表达式
+
+    fn check_option(opt: Option<i32>) {
+        match opt {
+            Some(p) => println!("has value {:?}", p),
+            None => println!("has no value"),
+        }
+    }
+
+    /*
+        fn hand_result(res: i32) -> Result<i32, dyn Error> {
+            do_something(res)?;
+
+            // 问号等价于
+
+            match do_something(res) {
+                Ok(o) => Ok(o),
+                Err(e) => return SomeError(e),
+            }
+        }
+    */
+
+    let arr = [1, 2, 3];
+    match arr {
+        [1, ..] => "start with one",
+        [a, b, c] => "not start with one",
+    };
+
+    let v = vec![1, 2, 3];
+    match v[..] {
+        [a, b] => "not match",
+        [a, b, c] => "matched",
+        _ => "",
+    };
+
+    // if let 表达式
+
+    let x: &Option<i32> = &Some(3);
+
+    // 编译器自动使用ref
+    if let Some(y) = x {
+        y;
+    }
+```
+
+## 2.10 智能指针
+
+### 2.10.1 在堆上分配内存：Box
+
+从语义上Rust的类型分为值语义和指针语义。存储在栈上的就是值语义，在语义层面上就是一种值。动态字符串和动态数组会在运行时增长，它们实际上属于指针语义，传递时传递的是存储在栈上的指针而不是全部数据
+
+Box是Saferust 中唯一的堆内存分配方式
+
+```
+let x: Box<i32> = Box::new(42);
+// 通过解引用来获取所包裹的值，指针都可以解引用
+let y = *x;
+
+assert_eq!(y, 42)
+```
+
+### 2.10.2 Box 内存管理机制
+
+借鉴了Cpp的RALL,Box实现了Drop trait。当变量离开作用域时，自动调用析构函数（drop函数）销毁值
+
+```
+// 标准库中的drop实现，编译器的行为
+    /*
+     unsafe impl<#[may_dangle] T: ?Sized> Drop for Box<T> {
+        fn drop(&mut self) {
+             FIXME:Do nothing,drop is currently performed by compiler
+        }
+    }
+    */
+```
+
+### 2.10.3 智能指针
+
+在Rust中，trait决定了类型的行为。所以智能指针和Deref trait、Drop trait相关
+
+二者都实现或者实现其一都是智能指针，所以智能指针在Rust中有两种语义，自动解引用（提升开发体验）和自动管理内存（安全无忧）
+
+只实现Deref trait：拥有指针语义，Deref赋予了类型的指针行为，通常在Rust中代表了Move语义，基本是分配在堆上的数据
+
+只实现Drop trait：拥有内存自动管理机制，Deref赋予了类型的析构行为
+
+#### 2.10.3.1 智能指针与Deref trait
+
+```
+// 1. 自动解引用 点调用操作
+    // 自定义一个类型
+    #[derive(Copy, Clone)]
+    struct User {
+        name: &'static str,
+    }
+
+    impl User {
+        fn name(&self) {
+            println!("{:?}", self.name);
+        }
+    }
+
+    // 调用
+
+    let u = User { name: "Alex" };
+    // 原来的调用方式
+
+    println!("{}", u.name);
+    // 使用自定义的智能指针包裹
+    let y = MySP::new(u);
+
+    // 包裹后的调用方式
+    // 这里智能指针实际上自动进行了解引用,获取了里面的值，然后用值进行关联函数调用
+
+    println!("{}", y.name);
+    // 手动解引用
+    let z = *y;
+
+    println!("{}", z.name);
+
+    // 结论：使用类型直接调用字段 = 智能指针解引用调用 = 手动解引用调用
+
+    // 2. 自动解引用 函数参数
+    fn takes_str(s: &str) {
+        println!("{}", s);
+    }
+
+    let s = String::from("hello");
+    // String 也是一个智能指针，它包裹了 str
+    // 自动解引用为原始类型str后要再加&
+
+    // 调用
+    takes_str(&s);
+
+    // 标准库中为String类型实现了Deref trait
+    /*
+    impl ops::Deref for String {
+        type Target = str;
+
+        #[inline]
+        fn deref(&self) -> &str {
+            unsafe { str::from_utf8_unchecked(&self.vec) }
+        }
+    }
+    */
+
+    // 自动解引用需要注意的地方
+    // 使用*x 解引用等价于 *（x.deref)
+
+    let s = Box::new("world");
+    let ref_s1 = *s;
+    let ref_s2 = *(s.deref());
+
+    assert_eq!(ref_s1, ref_s2);
+
+    // 自动解引用等价于 x.deref()
+```
+
+#### 2.10.3.2 标准库中的智能指针
+
+![image-20230203001747611](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203001747611.png)
+
 
 
 # 3 Rust核心库
