@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["functions","函数及函数项"]]};
+window.SIDEBAR_ITEMS = {"mod":[["closures","闭包与trait"],["functions","函数及函数项"]]};
