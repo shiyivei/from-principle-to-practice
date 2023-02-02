@@ -1115,6 +1115,17 @@ fn counter(i: i32) -> impl FnMut(i32) -> i32 {
 
 ## 2.9 模式匹配
 
+模式匹配是一种结构性的解构与构造的语义相对
+
+### 2.9.1 模式匹配位置
+
+![image-20230202173128036](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230202173128036.png)
+
+### 2.9.2 模式匹配的两种类型
+
+1. 可辩驳
+2. 不可辩驳
+
 
 
 # 3 Rust核心库

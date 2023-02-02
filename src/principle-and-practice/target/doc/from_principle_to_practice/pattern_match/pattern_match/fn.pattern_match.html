@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="模式匹配的位置"><meta name="keywords" content="rust, rustlang, rust-lang, pattern_match"><title>pattern_match in from_principle_to_practice::pattern_match::pattern_match - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1d6438e53893d4f5.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-b8db113b98e15459.css"><link rel="stylesheet" disabled href="../../../static.files/dark-4b64df8497ac42b0.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-4939169e939b96f8.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-8f89a77f33748381.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><div class="sidebar-elems"><h2><a href="index.html">In from_principle_to_practice::pattern_match::pattern_match</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Function <a href="../../index.html">from_principle_to_practice</a>::<wbr><a href="../index.html">pattern_match</a>::<wbr><a href="index.html">pattern_match</a>::<wbr><a class="fn" href="#">pattern_match</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../../src/from_principle_to_practice/pattern_match/pattern_match.rs.html#96">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><div class="item-decl"><pre class="rust fn"><code>pub fn pattern_match()</code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h4 id="模式匹配的位置"><a href="#模式匹配的位置">模式匹配的位置</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 1. let 声明中的匹配
+</span><span class="kw">struct </span>Point {
+        x: i32,
+        y: i32,
+    }
+
+    <span class="kw">let </span>(a, b) = (<span class="number">1</span>, <span class="number">2</span>);
+
+    <span class="kw">let </span>Point { x, y } = Point { x: <span class="number">3</span>, y: <span class="number">4 </span>};
+
+    <span class="macro">assert_eq!</span>(<span class="number">1</span>, a);
+    <span class="macro">assert_eq!</span>(<span class="number">2</span>, b);
+    <span class="macro">assert_eq!</span>(<span class="number">3</span>, x);
+    <span class="macro">assert_eq!</span>(<span class="number">4</span>, y);
+
+    <span class="comment">// 2.函数与闭包参数
+
+    </span><span class="kw">fn </span>sum(x: String, <span class="kw-2">ref </span>y: String) -&gt; String {
+        x + y
+    }
+
+    <span class="kw">let </span>s = sum(<span class="string">&quot;1&quot;</span>.to_owned(), <span class="string">&quot;2&quot;</span>.to_owned());
+    <span class="macro">assert_eq!</span>(s, <span class="string">&quot;12&quot;</span>.to_owned());
+
+    <span class="comment">// 辅助理解 ref
+
+    </span>{
+        <span class="kw">let </span>a = <span class="number">42</span>;
+        <span class="kw">let </span><span class="kw-2">ref </span>b = a;
+        <span class="kw">let </span>c = <span class="kw-2">&amp;</span>a;
+
+        <span class="macro">assert_eq!</span>(b, c);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>a = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+        <span class="kw">let </span><span class="kw-2">ref mut </span>b = a;
+
+        b[<span class="number">0</span>] = <span class="number">0</span>;
+
+        <span class="macro">assert_eq!</span>(a, [<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>])
+    }
+
+    <span class="comment">// 3. match 表达式
+
+    </span><span class="kw">fn </span>check_option(opt: <span class="prelude-ty">Option</span>&lt;i32&gt;) {
+        <span class="kw">match </span>opt {
+            <span class="prelude-val">Some</span>(p) =&gt; <span class="macro">println!</span>(<span class="string">&quot;has value {:?}&quot;</span>, p),
+            <span class="prelude-val">None </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;has no value&quot;</span>),
+        }
+    }
+
+    <span class="comment">/*
+        fn hand_result(res: i32) -&gt; Result&lt;i32, dyn Error&gt; {
+            do_something(res)?;
+
+            // 问号等价于
+
+            match do_something(res) {
+                Ok(o) =&gt; Ok(o),
+                Err(e) =&gt; return SomeError(e),
+            }
+        }
+    */
+
+    </span><span class="kw">let </span>arr = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+    <span class="kw">match </span>arr {
+        [<span class="number">1</span>, ..] =&gt; <span class="string">&quot;start with one&quot;</span>,
+        [a, b, c] =&gt; <span class="string">&quot;not start with one&quot;</span>,
+    };
+
+    <span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+    <span class="kw">match </span>v[..] {
+        [a, b] =&gt; <span class="string">&quot;not match&quot;</span>,
+        [a, b, c] =&gt; <span class="string">&quot;matched&quot;</span>,
+        <span class="kw">_ </span>=&gt; <span class="string">&quot;&quot;</span>,
+    };
+
+    <span class="comment">// if let 表达式
+
+    </span><span class="kw">let </span>x: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;i32&gt; = <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(<span class="number">3</span>);
+
+    <span class="comment">// 编译器自动使用ref
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(y) = x {
+        y;
+    }
+</code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0A%2F%2F%201.%20let%20%E5%A3%B0%E6%98%8E%E4%B8%AD%E7%9A%84%E5%8C%B9%E9%85%8D%0Afn%20main()%20%7B%0Astruct%20Point%20%7B%0A%20%20%20%20%20%20%20%20x%3A%20i32%2C%0A%20%20%20%20%20%20%20%20y%3A%20i32%2C%0A%20%20%20%20%7D%0A%0A%20%20%20%20let%20(a%2C%20b)%20%3D%20(1%2C%202)%3B%0A%0A%20%20%20%20let%20Point%20%7B%20x%2C%20y%20%7D%20%3D%20Point%20%7B%20x%3A%203%2C%20y%3A%204%20%7D%3B%0A%0A%20%20%20%20assert_eq!(1%2C%20a)%3B%0A%20%20%20%20assert_eq!(2%2C%20b)%3B%0A%20%20%20%20assert_eq!(3%2C%20x)%3B%0A%20%20%20%20assert_eq!(4%2C%20y)%3B%0A%0A%20%20%20%20%2F%2F%202.%E5%87%BD%E6%95%B0%E4%B8%8E%E9%97%AD%E5%8C%85%E5%8F%82%E6%95%B0%0A%0A%20%20%20%20fn%20sum(x%3A%20String%2C%20ref%20y%3A%20String)%20-%3E%20String%20%7B%0A%20%20%20%20%20%20%20%20x%20%2B%20y%0A%20%20%20%20%7D%0A%0A%20%20%20%20let%20s%20%3D%20sum(%221%22.to_owned()%2C%20%222%22.to_owned())%3B%0A%20%20%20%20assert_eq!(s%2C%20%2212%22.to_owned())%3B%0A%0A%20%20%20%20%2F%2F%20%E8%BE%85%E5%8A%A9%E7%90%86%E8%A7%A3%20ref%0A%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20let%20a%20%3D%2042%3B%0A%20%20%20%20%20%20%20%20let%20ref%20b%20%3D%20a%3B%0A%20%20%20%20%20%20%20%20let%20c%20%3D%20%26a%3B%0A%0A%20%20%20%20%20%20%20%20assert_eq!(b%2C%20c)%3B%0A%0A%20%20%20%20%20%20%20%20let%20mut%20a%20%3D%20%5B1%2C%202%2C%203%5D%3B%0A%20%20%20%20%20%20%20%20let%20ref%20mut%20b%20%3D%20a%3B%0A%0A%20%20%20%20%20%20%20%20b%5B0%5D%20%3D%200%3B%0A%0A%20%20%20%20%20%20%20%20assert_eq!(a%2C%20%5B0%2C%202%2C%203%5D)%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%203.%20match%20%E8%A1%A8%E8%BE%BE%E5%BC%8F%0A%0A%20%20%20%20fn%20check_option(opt%3A%20Option%3Ci32%3E)%20%7B%0A%20%20%20%20%20%20%20%20match%20opt%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20Some(p)%20%3D%3E%20println!(%22has%20value%20%7B%3A%3F%7D%22%2C%20p)%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20None%20%3D%3E%20println!(%22has%20no%20value%22)%2C%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F*%0A%20%20%20%20%20%20%20%20fn%20hand_result(res%3A%20i32)%20-%3E%20Result%3Ci32%2C%20dyn%20Error%3E%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20do_something(res)%3F%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20%E9%97%AE%E5%8F%B7%E7%AD%89%E4%BB%B7%E4%BA%8E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20match%20do_something(res)%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Ok(o)%20%3D%3E%20Ok(o)%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Err(e)%20%3D%3E%20return%20SomeError(e)%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20*%2F%0A%0A%20%20%20%20let%20arr%20%3D%20%5B1%2C%202%2C%203%5D%3B%0A%20%20%20%20match%20arr%20%7B%0A%20%20%20%20%20%20%20%20%5B1%2C%20..%5D%20%3D%3E%20%22start%20with%20one%22%2C%0A%20%20%20%20%20%20%20%20%5Ba%2C%20b%2C%20c%5D%20%3D%3E%20%22not%20start%20with%20one%22%2C%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20let%20v%20%3D%20vec!%5B1%2C%202%2C%203%5D%3B%0A%20%20%20%20match%20v%5B..%5D%20%7B%0A%20%20%20%20%20%20%20%20%5Ba%2C%20b%5D%20%3D%3E%20%22not%20match%22%2C%0A%20%20%20%20%20%20%20%20%5Ba%2C%20b%2C%20c%5D%20%3D%3E%20%22matched%22%2C%0A%20%20%20%20%20%20%20%20_%20%3D%3E%20%22%22%2C%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20%2F%2F%20if%20let%20%E8%A1%A8%E8%BE%BE%E5%BC%8F%0A%0A%20%20%20%20let%20x%3A%20%26Option%3Ci32%3E%20%3D%20%26Some(3)%3B%0A%0A%20%20%20%20%2F%2F%20%E7%BC%96%E8%AF%91%E5%99%A8%E8%87%AA%E5%8A%A8%E4%BD%BF%E7%94%A8ref%0A%20%20%20%20if%20let%20Some(y)%20%3D%20x%20%7B%0A%20%20%20%20%20%20%20%20y%3B%0A%20%20%20%20%7D%0A%7D&amp;edition=2021">Run</a></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="from_principle_to_practice" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (c5d82ed7a 2022-11-19)" data-search-js="search-df80cc3cb87b6482.js" data-settings-js="settings-7e1cf5cc683233f7.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
