@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["functions","函数及函数项"]]};

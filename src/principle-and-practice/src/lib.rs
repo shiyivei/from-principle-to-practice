@@ -5,6 +5,7 @@
 )]
 
 pub mod expression;
+pub mod function_and_closure;
 pub mod lexical_structure;
 pub mod trait_impl;
 pub mod type_system;

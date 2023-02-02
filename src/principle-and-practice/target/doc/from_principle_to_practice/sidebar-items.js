@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["expression","Rust 表达式"],["lexical_structure","Rust 词法结构"],["trait_impl","Rust 类型的行为"],["type_system","Rust 类型系统"]]};
+window.SIDEBAR_ITEMS = {"mod":[["expression","Rust 表达式"],["function_and_closure","函数和闭包"],["lexical_structure","Rust 词法结构"],["trait_impl","Rust 类型的行为"],["type_system","Rust 类型系统"]]};
