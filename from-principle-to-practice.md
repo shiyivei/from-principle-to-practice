@@ -411,7 +411,80 @@ println!("{},{}", sum1, sum2);
 1. usize和isize有符号和无符号指针大小类型，指针一般和计算机字长相等，32位处理器：4字节，64位处理器：8字节
 2. 布尔值可以转数字，但是反过来不可以
 3. 数组在Rust中是二等公民，长度不同，类型不同。等常量泛型稳定后可以晋升统一的[T;N]l 类型
-4. rust中的char是unicode标量，占四个字节
+4. 字符，rust中的char是unicode标量，占四个字节,对应于Rust中的u32类型。并且可以方便的转换为utf8编码的字节序列。字节序列的每一个元素是1个字节
+
+```
+let tao = '道';
+
+    let tao_u32 = tao as u32;
+    println!("{}", tao_u32); // 字符‘道’对应的u32的值
+    println!("U+{:x}", tao_u32); // 道的Unicode 字符编码
+    println!("{}", tao.escape_unicode()); // 道转译后的Unicode 码点
+
+    let a = char::from(65);
+    println!("{}", a);
+
+    //转换16进制的码点值
+    if let Some(c1) = std::char::from_u32(0x9053) {
+        println!("{}", c1)
+    }
+    if let Some(c2) = std::char::from_u32(36947) {
+        println!("{}", c2)
+    }
+
+    // 并不是所有的数字都是有效的Unicode标量值
+    if let Some(c3) = std::char::from_u32(129010101) {
+        println!("{}", c3)
+    } else {
+        println!("invalid code")
+    }
+
+    use std::str;
+    // 将utf-8序列转换为字符串
+    let tao = str::from_utf8(&[0xE9u8, 0x81u8, 0x93u8]).unwrap();
+    println!("tao:{}", tao);
+
+    // 通过16进制码位转换为字符串
+    let tao = String::from("\u{9053}");
+    println!("{}", tao);
+    let unicode_x = 0x9053;
+    let utf_x_hex = 0xe98193;
+    let utf_x_bin = 0b11101001100000011001011;
+
+    println!("unicode_x: {:b}", unicode_x);
+    println!("utf_x_hex: {:b}", utf_x_hex);
+    println!("utf_x_bin: {:b}", utf_x_bin);
+
+    // 特殊字符
+    // 码位可能不同,但字节大小一样
+    // 长度可能不同,但值的大小一样
+
+    let e = 'é'; // 和 let e = 'é'; 不一样，前者是两个unicode 码点，后者是1个
+                 // let e = 'é';
+    let f = 'e';
+
+    let g = "é";
+    let h = "e";
+
+    println!("e utf-8 bytes: {}", e.len_utf8()); // 占2个字节
+    println!("f utf-8 bytes: {}", f.len_utf8()); // 占1个字节
+
+    println!("e value size: {}", std::mem::size_of_val(&e)); // 4字节
+    println!("f value size: {}", std::mem::size_of_val(&f)); // 4字节
+
+    println!("g utf-8 bytes: {}", g.len()); // 2字节
+    println!("h utf-8 bytes: {}", h.len()); // 1字节
+
+    println!("g value size: {}", std::mem::size_of_val(&g)); // 16字节
+    println!("h value size: {}", std::mem::size_of_val(&g)); // 16字节
+
+    // emoji 只能是字符串
+    let s = String::from("love: ❤️");
+    println!("emoji {}", s)
+```
+
+实现的 trait 有 Copy、Clone等
+
 5. 字符串，rust中的字符串有非常多的类型，从根本上讲是为了适应不同的场景，如下：
 
 ![image-20230131171425591](https://github.com/shiyivei/everything-about-rust/raw/main/images/string.png)
@@ -431,6 +504,30 @@ let s_heap_memory = String::from("hello");
 //不可以使用未知大小的堆上原始字符串
 // let s = *s_heap_memory;
 ```
+
+Rust中每一个字符串都是一个UTF-8字节序列，实际上是一个“Vec<u8>"动态数组
+
+两种常见类型：str（字符串切片）和String
+
+Rust中没有内含正则引擎，日常字符串操作通过它本身的一些方法来完成字符、字节和字符串之间的转换。还有一些定位、搜索、匹配、去除空白等方法。可以在多线程种安全的使用
+
+String为什么有容量，因为它基于数组
+
+Pattern 相关的trait 提供了同名函数不同参数的功能，可以重点看看
+
+其他类型：
+
+1. Cstr/Cstring 与C语言打交道
+
+2. OsStr/OsString 与操作系统打交道
+
+3. Path/PathBuf 与路径打交道
+
+标准库导读三原则
+
+1. 类型自身介绍
+2. 类型自身实现的方法
+3. 类型实现的trait
 
 6 指针类型
 
@@ -535,7 +632,9 @@ println!("{:?}", std::mem::size_of::<B>());
 
 #### 2.6.3.3 容器类型
 
-![image-20230201184238041](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230201184238041.png)
+![image-20230203113058709](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203113058709.png)
+
+**共享容器**
 
 内部可变性：本质是把原始指针*mut 给开发者
 
@@ -544,7 +643,6 @@ println!("{:?}", std::mem::size_of::<B>());
 3. 基于UnsafeCell<T>,提供了Cell<T>和RefCell<T>
 
 ````
-
 ### 容器Cell、RefCell、UnsafeCell
 ### 1. 容器Cell: 通过移进移出值来实现内部可变性
 ```
@@ -591,6 +689,30 @@ println!("{:?}", std::mem::size_of::<B>());
 ```
 ### 3. 容器UnsafeCell 是上述两种容器的底层实现
 ````
+
+**集合容器**
+
+![image-20230203113835795](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203113835795.png)
+
+Vec<T> 标准库导读
+
+自身的方法：转换、排序、二分搜索、组合链接（join）、交换、追加等，
+
+实现的trait：Default
+
+Rust的内存分配器可以自定义；Vec内部是一个结构体，还介绍了容量和重新分配的概念。按照预分配的成倍增加。不会自动缩减。存放于堆上。如果相对存放的位置进行优化，可以使用rust- smallvec库
+
+集合容器：collection。什么时候用哪些？性能，迭代器，容量管理（手工使用缩减）、entry模式（连续插入）
+
+LinkedList标准库导读：增删改查，node存储数据非侵入式，侵入式的不存储数据。建议尽量使用动态数组和双端队列
+
+HashMap标准库导读：基于二次探查和SIMD查找，数据级的并行，就是单指令多数据查找。一般对哈希表的要求，哈希值如何产生，如何避免哈希冲突。Rust哈希算法默认是siphash，可以实现Hasher trait替换哈希算法，如FnvHasher，默认可以抵抗HashDos攻击。如何解决哈希碰撞，现在是Google的SwissTable实现，和C++持平。以前用的是Robinhood，但他们都基于二次探查
+
+枚举在rust中相当于一个接口
+
+方法：和动态数组差不多，实现trait：Extend，没有实现Drop，因为内部使用了算法hashbrown，实现了drop，涉及数据并行。还需要关注一个设计模式，entry，entry返回一个枚举（占位和空缺两种状态），非常聪明
+
+Rust集合容器为什么没有统一的接口（trait）：缺乏功能泛型关联类型GAT的支持
 
 #### 2.6.3.4 泛型
 
@@ -642,7 +764,6 @@ fn main() {
 trait中也可以定义默认实现和定义关联类型（一般是返回值类型中的错误类型）
 
 ```
-
 //单个类型的解析
    let four: u32 = "4".parse().unwrap();
    println!("{}", four);
@@ -1330,7 +1451,208 @@ assert_eq!(y, 42)
 
 ![image-20230203001747611](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203001747611.png)
 
+```
+     // 标准库中给泛型T实现的 Deref trait
+    /*
+    impl<T: ?Sized> const Deref for &T {
+        type Target = T;
 
+        fn deref(&self) -> &T {
+            *self
+        }
+    }
+
+    impl<T: ?Sized> !DerefMut for &T {}
+
+    ** 在日常开发中非常实用
+    ** 当我们拥有可变引用T时如果还想使用T,则可以自动解引用，比如点调用
+    impl<T: ?Sized> const Deref for &mut T {
+        type Target = T;
+
+        fn deref(&self) -> &T {
+            *self
+        }
+    }
+    */
+```
+
+## 2.11 迭代器
+
+### 2.11.1 迭代器trait
+
+迭代器和Rust中的集合类型密切相关
+
+1. 是设计模式中的一种行为模式
+2. 与集合使用，在不暴露集合底层的情况下遍历集合元素
+3. 将集合的遍历行为抽象为单独的迭代对象
+
+迭代器分为外部迭代器和内部迭代器，for循环实际上是外部迭代器的一个语法糖
+
+```
+  // 迭代器trait
+    trait Iterator {
+        type Item;
+
+        fn next(&mut self) -> Option<Self::Item>;
+    }
+
+    // 外部迭代器语法糖for循环，相当于迭代器的next方法
+    // Vec实现了迭代器trait
+    let v = vec![1, 2, 3, 4, 5];
+    {
+        // 使用into_iter方法获得迭代器
+        let mut _iterator = v.into_iter();
+        loop {
+            // match 匹配每一次的迭代结果
+            match _iterator.next() {
+                Some(i) => {
+                    println!("{}", i);
+                }
+                None => break,
+            }
+        }
+    }
+
+    // 使用for循环遍历
+    let v = vec![1, 2, 3, 4, 5];
+    for i in 0..v.len() {
+        println!("{}", v[i]);
+    }
+
+    // 自定义的内部迭代器（不是主要的模式）
+    trait InIterator<T: Copy> {
+        // 指定约束是为了把闭包作为参数传递
+        fn each<F: Fn(T) -> T>(&mut self, f: F);
+    }
+
+    impl<T: Copy> InIterator<T> for Vec<T> {
+        fn each<F: Fn(T) -> T>(&mut self, f: F) {
+            let mut i = 0;
+            while i < self.len() {
+                self[i] = f(self[i]);
+                i += 1;
+            }
+
+            // 等价于
+            // for i in 0..self.len() {
+            //     self[i] = f(self[i]);
+            // }
+        }
+    }
+
+    let mut v = vec![1, 2, 3];
+    v.each(|i| i * 3);
+    assert_eq!([3, 6, 9], &v[..3])
+```
+
+### 2.11.2 标准库导读
+
+为集合类型实现迭代器时只需要实现next方法
+
+迭代器有三种形式：inter（）&T，inter_mut（）&mut T，into_iter（）T，对应所有权三种语义
+
+迭代器适配器模式：允许在迭代的时候以不同的方式迭代：如map变迭代边映射，还有take和filter，chain。把原来的迭代器进行封装
+
+迭代器trait： 扩展，消费，两头迭代，FromIterator（和消费器配合）等
+
+### 2.11.3 第三方库
+
+itertools
+
+## 2.12 模块
+
+1. 语法集合
+2. 模块是一种软件设计思想，降低耦合，便于维护
+3. Rust中模块用于分割代码
+
+在rust中模块可以使用mod关键字定义，也可默认使用单个文件作为模块
+
+同级模块使用crate
+
+父级模块使用super
+
+包外模块之间使用包名
+
+模块的可见性自定义
+
+### 2.12.1 模块与属性
+
+```
+#[path = "foo.rs"]
+mod c 
+// 找 c.rs
+
+// 找inline/inner.rs
+mod inline {
+	#[path = "other.rs"]
+	mod inner;
+}
+
+//找路径thread_files/local_data.rs
+#[path = "thread_files"]
+mod thread {
+	#[path = "tls.rs"]
+	mod local_data
+}
+```
+
+## 2.13 包管理器Cargo
+
+```
+[package]
+name = "from-principle-to-practice"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+```
+
+1. 在rust中，package/crate都是指包，crate时编译单元
+2. package包含多个crate
+3. crate是实际的编译单元
+4. codegen-uint：每个crate在编译时默认被LLVM IR切割为16份，方便并行编译
+
+### 2.13.1 Cargo工作
+
+没有依赖地狱问题
+
+基本包结构
+
+![image-20230203163321910](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203163321910.png)
+
+ 
+
+### 2.13.2 toml 文件
+
+语义明显、无歧义的配置文件格语言格式
+
+```
+# 这是一个 TOML 文档
+
+title = "TOML 示例"
+
+[owner]
+name = "Tom Preston-Werner"
+dob = 1979-05-27T07:32:00-08:00
+
+[database]
+enabled = true
+ports = [ 8000, 8001, 8002 ]
+data = [ ["delta", "phi"], [3.14] ]
+temp_targets = { cpu = 79.5, case = 72.0 }
+
+[servers]
+
+[servers.alpha]
+ip = "10.0.0.1"
+role = "前端"
+
+[servers.beta]
+ip = "10.0.0.2"
+role = "后端"
+```
 
 # 3 Rust核心库
 

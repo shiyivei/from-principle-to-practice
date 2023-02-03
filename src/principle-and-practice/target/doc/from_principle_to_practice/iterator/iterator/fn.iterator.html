@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content=""><meta name="keywords" content="rust, rustlang, rust-lang, iterator"><title>iterator in from_principle_to_practice::iterator::iterator - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1d6438e53893d4f5.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-b8db113b98e15459.css"><link rel="stylesheet" disabled href="../../../static.files/dark-4b64df8497ac42b0.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-4939169e939b96f8.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-8f89a77f33748381.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><div class="sidebar-elems"><h2><a href="index.html">In from_principle_to_practice::iterator::iterator</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Function <a href="../../index.html">from_principle_to_practice</a>::<wbr><a href="../index.html">iterator</a>::<wbr><a href="index.html">iterator</a>::<wbr><a class="fn" href="#">iterator</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../../src/from_principle_to_practice/iterator/iterator.rs.html#76">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><div class="item-decl"><pre class="rust fn"><code>pub fn iterator()</code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h4 id=""><a href="#"></a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>  <span class="comment">// 迭代器trait
+    </span><span class="kw">trait </span>Iterator {
+        <span class="kw">type </span>Item;
+
+        <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;;
+    }
+
+    <span class="comment">// 外部迭代器语法糖for循环，相当于迭代器的next方法
+    // Vec实现了迭代器trait
+    </span><span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>];
+    {
+        <span class="comment">// 使用into_iter方法获得迭代器
+        </span><span class="kw">let </span><span class="kw-2">mut </span>_iterator = v.into_iter();
+        <span class="kw">loop </span>{
+            <span class="comment">// match 匹配每一次的迭代结果
+            </span><span class="kw">match </span>_iterator.next() {
+                <span class="prelude-val">Some</span>(i) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, i);
+                }
+                <span class="prelude-val">None </span>=&gt; <span class="kw">break</span>,
+            }
+        }
+    }
+
+    <span class="comment">// 使用for循环遍历
+    </span><span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>];
+    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..v.len() {
+        <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, v[i]);
+    }
+
+    <span class="comment">// 自定义的内部迭代器（不是主要的模式）
+    </span><span class="kw">trait </span>InIterator&lt;T: Copy&gt; {
+        <span class="comment">// 指定约束是为了把闭包作为参数传递
+        </span><span class="kw">fn </span>each&lt;F: Fn(T) -&gt; T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F);
+    }
+
+    <span class="kw">impl</span>&lt;T: Copy&gt; InIterator&lt;T&gt; <span class="kw">for </span>Vec&lt;T&gt; {
+        <span class="kw">fn </span>each&lt;F: Fn(T) -&gt; T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F) {
+            <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+            <span class="kw">while </span>i &lt; <span class="self">self</span>.len() {
+                <span class="self">self</span>[i] = f(<span class="self">self</span>[i]);
+                i += <span class="number">1</span>;
+            }
+
+            <span class="comment">// 等价于
+            // for i in 0..self.len() {
+            //     self[i] = f(self[i]);
+            // }
+        </span>}
+    }
+
+    <span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+    v.each(|i| i * <span class="number">3</span>);
+    <span class="macro">assert_eq!</span>([<span class="number">3</span>, <span class="number">6</span>, <span class="number">9</span>], <span class="kw-2">&amp;</span>v[..<span class="number">3</span>])
+
+    <span class="comment">// laziness
+    </span><span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>];
+    <span class="comment">// 未迭代
+    // 边迭代,边使用map处理
+    </span>v.iter().map(|x| <span class="macro">println!</span>(<span class="string">&quot;{x}&quot;</span>));
+
+    <span class="kw">let </span>num = <span class="number">1</span>..<span class="number">10</span>;
+    <span class="comment">// let three = num.take(3); // 迭代三个
+    // 收集时开始迭代
+    </span><span class="kw">let </span>three: Vec&lt;i32&gt; = num.take(<span class="number">3</span>).collect(); <span class="comment">// 迭代三个
+
+    // 迭代器适配器有很多
+</span></code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0A%20%20%2F%2F%20%E8%BF%AD%E4%BB%A3%E5%99%A8trait%0Afn%20main()%20%7B%0Atrait%20Iterator%20%7B%0A%20%20%20%20%20%20%20%20type%20Item%3B%0A%0A%20%20%20%20%20%20%20%20fn%20next(%26mut%20self)%20-%3E%20Option%3CSelf%3A%3AItem%3E%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20%E5%A4%96%E9%83%A8%E8%BF%AD%E4%BB%A3%E5%99%A8%E8%AF%AD%E6%B3%95%E7%B3%96for%E5%BE%AA%E7%8E%AF%EF%BC%8C%E7%9B%B8%E5%BD%93%E4%BA%8E%E8%BF%AD%E4%BB%A3%E5%99%A8%E7%9A%84next%E6%96%B9%E6%B3%95%0A%20%20%20%20%2F%2F%20Vec%E5%AE%9E%E7%8E%B0%E4%BA%86%E8%BF%AD%E4%BB%A3%E5%99%A8trait%0A%20%20%20%20let%20v%20%3D%20vec!%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20%E4%BD%BF%E7%94%A8into_iter%E6%96%B9%E6%B3%95%E8%8E%B7%E5%BE%97%E8%BF%AD%E4%BB%A3%E5%99%A8%0A%20%20%20%20%20%20%20%20let%20mut%20_iterator%20%3D%20v.into_iter()%3B%0A%20%20%20%20%20%20%20%20loop%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20match%20%E5%8C%B9%E9%85%8D%E6%AF%8F%E4%B8%80%E6%AC%A1%E7%9A%84%E8%BF%AD%E4%BB%A3%E7%BB%93%E6%9E%9C%0A%20%20%20%20%20%20%20%20%20%20%20%20match%20_iterator.next()%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Some(i)%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20println!(%22%7B%7D%22%2C%20i)%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20None%20%3D%3E%20break%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20%E4%BD%BF%E7%94%A8for%E5%BE%AA%E7%8E%AF%E9%81%8D%E5%8E%86%0A%20%20%20%20let%20v%20%3D%20vec!%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%20%20%20%20for%20i%20in%200..v.len()%20%7B%0A%20%20%20%20%20%20%20%20println!(%22%7B%7D%22%2C%20v%5Bi%5D)%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E5%86%85%E9%83%A8%E8%BF%AD%E4%BB%A3%E5%99%A8%EF%BC%88%E4%B8%8D%E6%98%AF%E4%B8%BB%E8%A6%81%E7%9A%84%E6%A8%A1%E5%BC%8F%EF%BC%89%0A%20%20%20%20trait%20InIterator%3CT%3A%20Copy%3E%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20%E6%8C%87%E5%AE%9A%E7%BA%A6%E6%9D%9F%E6%98%AF%E4%B8%BA%E4%BA%86%E6%8A%8A%E9%97%AD%E5%8C%85%E4%BD%9C%E4%B8%BA%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92%0A%20%20%20%20%20%20%20%20fn%20each%3CF%3A%20Fn(T)%20-%3E%20T%3E(%26mut%20self%2C%20f%3A%20F)%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20impl%3CT%3A%20Copy%3E%20InIterator%3CT%3E%20for%20Vec%3CT%3E%20%7B%0A%20%20%20%20%20%20%20%20fn%20each%3CF%3A%20Fn(T)%20-%3E%20T%3E(%26mut%20self%2C%20f%3A%20F)%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20let%20mut%20i%20%3D%200%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20while%20i%20%3C%20self.len()%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20self%5Bi%5D%20%3D%20f(self%5Bi%5D)%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20i%20%2B%3D%201%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20%E7%AD%89%E4%BB%B7%E4%BA%8E%0A%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20for%20i%20in%200..self.len()%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20%20%20%20%20self%5Bi%5D%20%3D%20f(self%5Bi%5D)%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%0A%20%20%20%20let%20mut%20v%20%3D%20vec!%5B1%2C%202%2C%203%5D%3B%0A%20%20%20%20v.each(%7Ci%7C%20i%20*%203)%3B%0A%20%20%20%20assert_eq!(%5B3%2C%206%2C%209%5D%2C%20%26v%5B..3%5D)%0A%0A%20%20%20%20%2F%2F%20laziness%0A%20%20%20%20let%20v%20%3D%20vec!%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%20%20%20%20%2F%2F%20%E6%9C%AA%E8%BF%AD%E4%BB%A3%0A%20%20%20%20%2F%2F%20%E8%BE%B9%E8%BF%AD%E4%BB%A3%2C%E8%BE%B9%E4%BD%BF%E7%94%A8map%E5%A4%84%E7%90%86%0A%20%20%20%20v.iter().map(%7Cx%7C%20println!(%22%7Bx%7D%22))%3B%0A%0A%20%20%20%20let%20num%20%3D%201..10%3B%0A%20%20%20%20%2F%2F%20let%20three%20%3D%20num.take(3)%3B%20%2F%2F%20%E8%BF%AD%E4%BB%A3%E4%B8%89%E4%B8%AA%0A%20%20%20%20%2F%2F%20%E6%94%B6%E9%9B%86%E6%97%B6%E5%BC%80%E5%A7%8B%E8%BF%AD%E4%BB%A3%0A%20%20%20%20let%20three%3A%20Vec%3Ci32%3E%20%3D%20num.take(3).collect()%3B%20%2F%2F%20%E8%BF%AD%E4%BB%A3%E4%B8%89%E4%B8%AA%0A%0A%20%20%20%20%2F%2F%20%E8%BF%AD%E4%BB%A3%E5%99%A8%E9%80%82%E9%85%8D%E5%99%A8%E6%9C%89%E5%BE%88%E5%A4%9A%0A%7D&amp;edition=2021">Run</a></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="from_principle_to_practice" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (c5d82ed7a 2022-11-19)" data-search-js="search-df80cc3cb87b6482.js" data-settings-js="settings-7e1cf5cc683233f7.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
