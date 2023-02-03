@@ -3,7 +3,6 @@ fn main() {
         name: String,
         address: String,
     }
-
     pub mod a {
         pub fn a_name(s: String) -> String {
             println!("a");

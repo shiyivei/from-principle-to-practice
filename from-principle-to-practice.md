@@ -1624,7 +1624,7 @@ edition = "2021"
 
  
 
-### 2.13.2 toml 文件
+### 2.13.2 toml 配置文件
 
 语义明显、无歧义的配置文件格语言格式
 
@@ -1653,6 +1653,29 @@ role = "前端"
 ip = "10.0.0.2"
 role = "后端"
 ```
+
+### 2.13.3 Cargo 命令与工具介绍
+
+```
+cargo check 静态检查当前crate及其依赖项
+cargo build 静态检查和编译
+cargo run 检查+构建+执行
+cargo clean 清除构建文件
+cargo doc 生成文档
+```
+
+常用工具
+
+```
+cargo fix 修复warning
+cargo add 
+cargo audit 维护漏洞数据库，检查以来漏洞
+cargo clippy 静态分析坏代码
+cargo fmt 格式化代码
+cargo expand 展开宏
+```
+
+更多内容请查看Cargo book
 
 # 3 Rust核心库
 
