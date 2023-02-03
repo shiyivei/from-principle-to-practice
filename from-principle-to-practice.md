@@ -1693,5 +1693,39 @@ use core::mem::MaybeUninit;
 
 # 6 知名Rust项目
 
+代码组织方式：Rust推荐整个项目使用多个crate构建
+
+## 6.1 Rust
+
+主要是编译器的实现
+
+## 6.2 Wasmtime
+
+字节码联盟维护的一个JIT的WebAssembly运行时，使用的编译器是Cranelift
+
+## 6.3 Futures-rs
+
+官方提供的一个运行时实现
+
+## 6.4 async-std
+
+标准库对async的实现
+
+## 6.5 Tokio
+
+比较成熟的异步运行时
+
+## 6.6 Rocket
+
+Web框架
+
+## 6.7 Actix-web
+
+Web框架
+
+## 6.8 TiKV
+
+数据库
+
 
 
