@@ -1,28 +1,26 @@
+pub const CONFIG_ENV: &str = "POEM_ENV";
+use std::env;
 fn main() {
-    struct User {
-        name: String,
-        address: String,
-    }
-    pub mod a {
-        pub fn a_name(s: String) -> String {
-            println!("a");
-            s
-        }
-        pub mod b {
-            pub fn b_name(s: String) -> String {
-                println!("b");
-                s
-            }
-            pub mod c {
-                pub fn c_name(s: String) -> String {
-                    println!("c");
-                    s
-                }
+    match env::var(CONFIG_ENV) {
+        Ok(s) => {
+            if s == "d".to_string() {
+                println!("{:?}", "development model");
+            } else if s == "s".to_string() {
+                println!("{:?}", "staging model");
+            } else if s == "p".to_string() {
+                println!("{:?}", "production model");
+            } else {
+                println!("{:?}", "invalid model");
             }
         }
+        _ => println!("{:?}", "development model"),
     }
 
-    a::a_name("Alice".to_string());
-    a::b::b_name("Alice".to_string());
-    a::b::c::c_name("Alice".to_string());
+    pub enum Model {
+        Integer(i32, i32),
+    }
+
+    let m = Model::Integer(42, 43);
+
+    println!("{:?}", m);
 }
