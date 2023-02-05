@@ -20,7 +20,7 @@ Rust语言其他的不多强调了，但要强调一点：性能、安全以及�
 
 划分了Safe Rust和Unsafe Rust
 
-# 2 Rust语言核心原理及案例
+# 2 Rust语言基础
 
 ## 2.1 Rust 编译过程
 
@@ -1676,6 +1676,176 @@ cargo expand 展开宏
 ```
 
 更多内容请查看Cargo book
+
+# 3 Rust语言核心
+
+## 3.1 Rust语言架构
+
+1. 安全抽象和范式抽象
+
+![image-20230205093804445](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205093804445.png)
+
+2. 类型系统：保证程序安全
+
+3. 资源管理（内存管理）
+
+### 3.1.1 虚拟地址空间
+
+![image-20230205094157609](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205094157609.png)
+
+### 3.1.2 函数调用栈
+
+![image-20230205094254609](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205094254609.png)   
+
+函数调用栈实例
+
+```
+let answer = "42";
+    let no_answer = answer;
+    println!("{:?}", answer); //可用
+
+    let answer = String::from("42");
+    let no_answer = answer;
+```
+
+中级中间语言
+
+```
+
+// MIR
+    // 函数调用栈
+    // 运行结束时,最后一个会先被清除
+    // 先进后出
+    /*
+    let _1: &str;
+    scope 1 {
+        debug answer => _1;
+        let _2: &str;
+        scope 2 {
+            debug no_answer => _2;
+            let _3: std::string::String;
+            scope 3 {
+                debug answer => _3;
+                let _4: std::string::String;
+                scope 4 {
+                    debug no_answer => _4;
+                }
+            }
+        }
+    }
+```
+
+### 3.1.3 Rust与其它语言内存管理区别
+
+1. C: 纯手工管理 （缺乏安全抽象模型）
+2. C++: 手工管理 + 确定性析构（缺乏安全抽象模型）
+3. GC语言：垃圾回收（性能差）
+4. Rust语言：考虑性能，借鉴Cpp的RALL资源管理方式，考虑安全：增加所有权语义
+
+## 3.2 Rust核心概念
+
+### 3.2.1 核心概念
+
+![image-20230205092655253](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205092655253.png)
+
+### 3.2.2 要掌握的内容
+
+1. 掌握所有权语义
+2. 领略Rust的工程能力
+3. 掌握元编程能力
+4. 正确认识Unsafe Rust
+
+## 3.3 所有权：内存安全
+
+### 3.3.1 语义模型
+
+有两种：Copy和Clone
+
+当声明一个变量时，这个变量会拥有所有权，绑定一段生命周期以及绑定一个数据，这个变量是所有权的拥有者，它可以被使用（所有权转移）或者借用（使用权转移）。当它进入到新的scope时是move或者拷贝，引用的话受原变量声明周期的约束，RALL内存管理机制通过Scope（有所有权的变量才有权利管理释放内存）管理内存
+
+```
+let answer = 42;
+```
+
+![image-20230205103214043](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205103214043.png)
+
+
+
+#### 3.3.1.1 Copy和Copy trait
+
+String的结构
+
+![image-20230205181818172](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205181818172.png)
+
+&str的结构
+
+![image-20230205181914377](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205181914377.png)
+
+基础数据类型：基本都实现了Copy trait
+
+自定义类型：结构体不会实现Copy，需要手动通过派生宏实现，并且同时需要Clone trait；当结构体内部的成员类型没有实现copy 时，结构体也不能实现Copy，枚举同理
+
+注意：&mut T 没有实现Copy类型，&T实现了Copy
+
+#### 3.3.1.2 Move与析构
+
+move的本质是把变量进行了未初始化标记而不是立刻丢弃
+
+
+
+### 3.3.2 类型系统
+
+Rust编译器遵循类型理论：仿射类型：它是一种子结构类型系统。意义：资源最多只能被使用一次.
+
+Rust类型系统有两种语义：移动语义（默认）复制语义（该类型必须实现Copy trait：数据能够被安全的复制）
+
+为什么实现Copy必须先实现Clone，它是编译器的行为，开发者再实现无用
+
+```
+pub trait Copy: Clone { }
+```
+
+哪些是移动语义？在运行时动态增长的类型，也就是说需要动态分配内存
+
+Copy本质上是按位复制，并且不可以被重载，clone隐式调用，可以显式实现和调用
+
+### 3.3.3 内存管理
+
+1. 数据默认存储到栈上
+2. 利用栈来自动管理堆内存（结合函数调用栈来理解，当栈针被清除时，自动调用析构函数Drop，堆上的数据也被清空）
+
+Box<T>也叫做装箱类型，栈上会保留指针
+
+Vec<T>:确定性析构
+
+Box<dyn Trait>：trait 对象在栈上，保留了数据指针和虚表指针
+
+Rc<T>和Arc<T>引用计数的容器：可以共享所有权，强指针有所有权。锁和容器也类似（不是说强弱指针）
+
+枚举：相当于每个枚举值前面都有tag
+
+
+
+![image-20230205115237278](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205115237278.png) 
+
+
+
+### 3.3.4 借用
+
+借用本质上指的是所有权的借用。可以把它看作是一个指针（被借用者可以看作是内存位置），但是它是安全的，经过Rust编译器安全检查的。安全检查包括一些行为，比如可变与不可借用/使用等。Safe Rust中，引用永远是指向有效的数据
+
+关于裸指针（没有安全的外衣）
+
+### 3.3.5 共享
+
+1. Rust中的Clone trait在语义上表示：所有权共享
+2. 包含两种：一种是深拷贝，另一种是引用计数。但是二者共用一个clone trait
+
+引用计数容器Rc和Arc以及同步所和互斥锁（Mutex<T>和RwLock<T>）
+
+![image-20230205175521563](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205175521563.png)
+
+
 
 # 3 Rust核心库
 

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["copy_and_copy_trait","1 Copy 和 Copy Trait"]]};

@@ -1,26 +1,20 @@
-pub const CONFIG_ENV: &str = "POEM_ENV";
-use std::env;
+use std::borrow::Borrow;
+
+#[allow(unused)]
 fn main() {
-    match env::var(CONFIG_ENV) {
-        Ok(s) => {
-            if s == "d".to_string() {
-                println!("{:?}", "development model");
-            } else if s == "s".to_string() {
-                println!("{:?}", "staging model");
-            } else if s == "p".to_string() {
-                println!("{:?}", "production model");
-            } else {
-                println!("{:?}", "invalid model");
-            }
-        }
-        _ => println!("{:?}", "development model"),
-    }
+    // move 语义的本质
 
-    pub enum Model {
-        Integer(i32, i32),
-    }
+    let mut a = "42".to_string();
+    let b = a;
 
-    let m = Model::Integer(42, 43);
+    // 上面两个表达式的共同作用等价于将a重制为未出始化状态
+    // 而不是立即调用drop（析构函数）丢弃
+    // 当函数调用结束时才会被都去丢弃
+    let mut a: String;
 
-    println!("{:?}", m);
+    // 重新给a赋值
+    a = "a".to_string();
+
+    // 可以继续使用
+    println!("{:?}", a);
 }
