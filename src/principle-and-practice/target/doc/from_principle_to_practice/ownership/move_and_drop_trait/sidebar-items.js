@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["move_and_drop_trait","move 语义的本质：初始化变量"]]};

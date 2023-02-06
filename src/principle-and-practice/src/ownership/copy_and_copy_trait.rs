@@ -1,4 +1,4 @@
-//! 1 Copy 和 Copy Trait
+//! 1 copy 和 Copy trait
 //!
 /**
  ### 数据Copy和按位复制

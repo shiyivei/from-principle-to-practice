@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["lifetime","生命周期参数"],["scope_and_nll","词法作用域和非词法作用域 Scope和NLL"]]};

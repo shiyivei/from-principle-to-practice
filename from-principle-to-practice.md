@@ -1755,7 +1755,7 @@ let answer = "42";
 3. 掌握元编程能力
 4. 正确认识Unsafe Rust
 
-## 3.3 所有权：内存安全
+## 3.3 内存安全：所有权
 
 ### 3.3.1 语义模型
 
@@ -1791,7 +1791,154 @@ String的结构
 
 move的本质是把变量进行了未初始化标记而不是立刻丢弃
 
+不同的情况下，变量析构的顺序可能不同，本质上是和内存安全相关的
 
+### 3.3.2 借用检查
+
+#### 3.2.1.1 词法作用域和非词法作用域
+
+学习词法作用域和非词法作用域借用检查
+
+非词法作用域检查颗粒度更细，在mir层级
+
+```
+// 1 词法作用域
+    // 一个函数的块表达式对应一个栈针 stack frame
+    // 栈针的特点是函数调用完会自动清空
+    // 词法作用域对应栈针
+    // 基本上词法作用域等于生命周期
+    let mut v = vec![];
+    v.push(1);
+
+    {
+        //    println!("{:?}", v[0]);
+        v.push(2);
+    }
+    // mir 中每一个scope都代表一个词法作用域
+    /*
+    scope 1 {
+        debug v => _1;                   // in scope 1 at src/main.rs:3:5: 3:10
+    }
+    */
+
+    // 2 非词法作用域 NLL: 案例 1
+
+    // Rust语言编译过程
+    // text -> tokens -> ast -> hir -> mir -> llvm ir -> llvm
+    // 在可变借用的作用域内不允许在开辟的子生命周期中执行可变借用
+    let mut v: Vec<i32> = vec![];
+    let vv = &v;
+
+    {
+        //    println!("{:?}", v[0]);
+        //    v.push(2); // 不允许可变借用
+    }
+
+    vv;
+
+    // 2 非词法作用域 NLL: 案例 2
+    // 替换问好
+
+    let s = "ab?c?d";
+
+    // 把字符串转成字符切片
+    let mut chars = s.chars().collect::<Vec<char>>();
+
+    println!("{:?}", chars);
+
+    for i in 0..s.len() {
+        // 这里不可以用可变借用
+        let mut words = ('a'..'z').into_iter();
+        println!("{:?}", words);
+
+        if chars[i] == '?' {
+            // 获取左边和右边的字符
+            let left = if i == 0 { None } else { Some(chars[i - 1]) };
+            let right = if i == s.len() - 1 {
+                None
+            } else {
+                Some(chars[i + 1])
+            };
+
+            // 在26个字母中寻找不等于左边也不等于右边的字母进行替换
+            chars[i] = words
+                .find(|&w| Some(w) != left && Some(w) != right)
+                .unwrap();
+        }
+    }
+    // 将字符收集转换为字符串
+    let s = chars.into_iter().collect::<String>();
+    println!("{:?}", s)
+```
+
+#### 3.3.1.2 生命周期参数
+
+1. 目的：为了避免出现悬垂指针
+
+2. 晚限定与早限定
+
+生命周期参数一般出现在函数参数的传递过程中以及自定义类型声明时
+
+有两种方式：晚限定和早限定，早限定是一种更普遍的用法，尤其是实现trait或者关联函数时，不用在每个函数签名处声明生命周期参数
+
+总结：
+
+late bound ：在具体调用时才自动生成具体的生命周期参数实例，不可以手动指定，编译器会检查本地变量
+
+early bound：可以指定生命周期参数，会让编译器只检查参数类型以及生命周期参数，不检查本地变量
+
+3. trait 对象中的生命周期参数
+
+```
+trait Foo<'a> {}
+    
+struct FooImpl<'a> {
+        s: &'a [u32],
+    }
+    impl<'a> Foo<'a> for FooImpl<'a> {}
+
+    // trait 对象必须使用 Box包裹
+    // 任何实现了 某个trait的类型，它的实例都是 trait对象
+    // trait 对象默认为静态生命周期，当作为返回值时，需要手动“缩短”（指定生命周期参数，如‘a）
+
+    // fn foo<'a, 'b: 'a>(s: &'a [u32]) -> Box<dyn Foo<'a> + 'a> { //第一种写法
+    fn foo<'a>(s: &'a [u32]) -> Box<dyn Foo<'a> + 'a> {
+        // 第二种写法
+        Box::new(FooImpl { s: s })
+    }
+```
+
+4. 高阶生命周期参数
+
+```
+
+    use std::fmt::Debug;
+    trait DosSomething<T> {
+        fn do_something(&self, value: T);
+    }
+
+    impl<'a, T: Debug> DosSomething<T> for &'a usize {
+        fn do_something(&self, value: T) {
+            println!("{:?}", value);
+        }
+    }
+
+    // 高阶生命周期，高阶限定，for语法，是一种late bound
+    //     fn foo<'a>(b: Box<dyn DosSomething<&'a usize>>) { 改动前
+    fn foo<'a>(b: Box<dyn for<'f> DosSomething<&'f usize>>) {
+        // 不在当前作用域判断
+        let s: usize = 10;
+        b.do_something(&s) // 在do something 函数作用域判断
+    }
+
+    let x = Box::new(&2usize);
+    foo(x)
+```
+
+注意：并不是所有的生命周期都是在当前作用域判断的
+
+5. 闭包生命周期参数
+6. trait对象中的生命周期参数
 
 ### 3.3.2 类型系统
 
@@ -1846,6 +1993,18 @@ Rc<T>和Arc<T>引用计数的容器：可以共享所有权，强指针有所有
 ![image-20230205175521563](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205175521563.png)
 
 
+
+## 3.4 线程安全：线程和并发
+
+### 3.4.1 本地线程
+
+本地线程也叫内核线程，由操作系统来调度。
+
+并发：同时应对很多事情的能力
+
+并行：同时执行很多事情的能力
+
+Rust使用了强大的类型系统以及两个专用的trait来在编译期时就发现并发安全问题
 
 # 3 Rust核心库
 

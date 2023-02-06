@@ -1,0 +1,127 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="move 语义的本质：初始化变量"><meta name="keywords" content="rust, rustlang, rust-lang, move_and_drop_trait"><title>move_and_drop_trait in from_principle_to_practice::ownership::move_and_drop_trait - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1d6438e53893d4f5.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-b8db113b98e15459.css"><link rel="stylesheet" disabled href="../../../static.files/dark-4b64df8497ac42b0.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-4939169e939b96f8.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-8f89a77f33748381.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../from_principle_to_practice/index.html"><div class="logo-container"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><div class="sidebar-elems"><h2><a href="index.html">In from_principle_to_practice::ownership::move_and_drop_trait</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Function <a href="../../index.html">from_principle_to_practice</a>::<wbr><a href="../index.html">ownership</a>::<wbr><a href="index.html">move_and_drop_trait</a>::<wbr><a class="fn" href="#">move_and_drop_trait</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../../src/from_principle_to_practice/ownership/move_and_drop_trait.rs.html#137">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><div class="item-decl"><pre class="rust fn"><code>pub fn move_and_drop_trait()</code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h4 id="move-语义的本质初始化变量"><a href="#move-语义的本质初始化变量">move 语义的本质：初始化变量</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>   <span class="kw">let </span><span class="kw-2">mut </span>a = <span class="string">&quot;42&quot;</span>.to_string();
+   <span class="kw">let </span>b = a;
+
+   <span class="comment">// 上面两个表达式的共同作用等价于将a重制为未出始化状态
+   // 而不是立即调用drop（析构函数）丢弃
+   // 当函数调用结束时才会被都去丢弃
+   </span><span class="kw">let </span><span class="kw-2">mut </span>a: String;
+
+   <span class="comment">// 重新给a赋值
+   </span>a = <span class="string">&quot;a&quot;</span>.to_string();
+
+   <span class="comment">// 可以继续使用
+   //     println!(&quot;{:?}&quot;, a);
+</span></code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0Afn%20main()%20%7B%0Alet%20mut%20a%20%3D%20%2242%22.to_string()%3B%0A%20%20%20let%20b%20%3D%20a%3B%0A%0A%20%20%20%2F%2F%20%E4%B8%8A%E9%9D%A2%E4%B8%A4%E4%B8%AA%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%9A%84%E5%85%B1%E5%90%8C%E4%BD%9C%E7%94%A8%E7%AD%89%E4%BB%B7%E4%BA%8E%E5%B0%86a%E9%87%8D%E5%88%B6%E4%B8%BA%E6%9C%AA%E5%87%BA%E5%A7%8B%E5%8C%96%E7%8A%B6%E6%80%81%0A%20%20%20%2F%2F%20%E8%80%8C%E4%B8%8D%E6%98%AF%E7%AB%8B%E5%8D%B3%E8%B0%83%E7%94%A8drop%EF%BC%88%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%EF%BC%89%E4%B8%A2%E5%BC%83%0A%20%20%20%2F%2F%20%E5%BD%93%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E7%BB%93%E6%9D%9F%E6%97%B6%E6%89%8D%E4%BC%9A%E8%A2%AB%E9%83%BD%E5%8E%BB%E4%B8%A2%E5%BC%83%0A%20%20%20let%20mut%20a%3A%20String%3B%0A%0A%20%20%20%2F%2F%20%E9%87%8D%E6%96%B0%E7%BB%99a%E8%B5%8B%E5%80%BC%0A%20%20%20a%20%3D%20%22a%22.to_string()%3B%0A%0A%20%20%20%2F%2F%20%E5%8F%AF%E4%BB%A5%E7%BB%A7%E7%BB%AD%E4%BD%BF%E7%94%A8%0A%20%20%20%2F%2F%20%20%20%20%20println!(%22%7B%3A%3F%7D%22%2C%20a)%3B%0A%7D&amp;edition=2021">Run</a></div>
+<h4 id="析构顺序"><a href="#析构顺序">析构顺序</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 析构顺序 案例 1
+// drop： 是Rust自动管理内存的机制，也是智能指针的机制
+</span><span class="kw">struct </span>PrintDrop(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str);
+<span class="kw">impl </span>Drop <span class="kw">for </span>PrintDrop {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="macro">println!</span>(<span class="string">&quot;Dropping {:?}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>);
+    }
+}
+
+<span class="comment">// 先丢弃y,后丢弃x
+</span><span class="kw">let </span>a = PrintDrop(<span class="string">&quot;x&quot;</span>);
+<span class="kw">let </span>a = PrintDrop(<span class="string">&quot;y&quot;</span>);
+
+<span class="comment">// 析构顺序 案例 2
+// 元组析构 元组内部按照定义顺序析构
+</span><span class="kw">let </span>tup1 = (PrintDrop(<span class="string">&quot;x&quot;</span>), PrintDrop(<span class="string">&quot;y&quot;</span>), PrintDrop(<span class="string">&quot;z&quot;</span>));
+<span class="kw">let </span>tup2 = (PrintDrop(<span class="string">&quot;1&quot;</span>), PrintDrop(<span class="string">&quot;z&quot;</span>), PrintDrop(<span class="string">&quot;3&quot;</span>));
+
+<span class="comment">// 析构顺序 案例 3
+</span><span class="kw">let </span>tup3 = (PrintDrop(<span class="string">&quot;a&quot;</span>), PrintDrop(<span class="string">&quot;b&quot;</span>), PrintDrop(<span class="string">&quot;c&quot;</span>));
+<span class="comment">// panic会导致整个tuple最后被析构
+// 内部析构顺序也会变
+// 并且导致后面的析构函数不会调用
+//     let tup4 = (PrintDrop(&quot;x&quot;), PrintDrop(&quot;y&quot;), panic!());
+
+// 析构顺序 案例 4
+// 先drop 自身，然后再按照内存布局drop
+</span><span class="kw">struct </span>Foo {
+    bar: PrintDrop,
+    baz: PrintDrop,
+}
+
+<span class="kw">impl </span>Drop <span class="kw">for </span>Foo {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="macro">println!</span>(<span class="string">&quot;Dropping Foo&quot;</span>)
+    }
+}
+
+<span class="kw">let </span>foo = Foo {
+    bar: PrintDrop(<span class="string">&quot;bar&quot;</span>),
+    baz: PrintDrop(<span class="string">&quot;baz&quot;</span>),
+};
+
+<span class="comment">// 析构顺序 案例 5 闭包 捕获未修改
+// 按照捕获顺序
+</span><span class="kw">let </span>z = PrintDrop(<span class="string">&quot;z&quot;</span>);
+<span class="kw">let </span>x = PrintDrop(<span class="string">&quot;x&quot;</span>);
+<span class="kw">let </span>y = PrintDrop(<span class="string">&quot;y&quot;</span>);
+
+<span class="kw">let </span>closure = <span class="kw">move </span>|| {
+    y;
+    z;
+    x
+};
+<span class="comment">//等价于：生成的匿名结构体
+//所以按照内存布局析构
+</span><span class="kw">struct </span>Closure {
+    y: PrintDrop,
+    z: PrintDrop,
+    x: PrintDrop,
+}
+
+<span class="comment">// 析构顺序 案例 5 闭包 先定义的后析构
+// 先析构子区域的，必须符合安全逻辑
+
+</span><span class="kw">let </span>z = PrintDrop(<span class="string">&quot;z&quot;</span>);
+<span class="kw">let </span>x = PrintDrop(<span class="string">&quot;x&quot;</span>);
+<span class="kw">let </span>y = PrintDrop(<span class="string">&quot;y&quot;</span>);
+
+<span class="kw">let </span>closure = <span class="kw">move </span>|| {
+    {
+        <span class="kw">let </span>z_ref = <span class="kw-2">&amp;</span>z;
+    }
+    x;
+    y;
+    z;
+};
+
+<span class="comment">// 使用forget / ManuallyDrop / unsafe rust避免自动drop
+// ManuallyDrop&lt;T&gt;
+// 内存泄漏在Rust中不是不安全，顶多占用内存
+// 弱引用和所有权没关系，不能调用析构函数，使用forget忘掉所有权，就不会调用析构函数
+</span><span class="kw">use </span>std::sync::Arc;
+<span class="kw">let </span>arc = Arc::new(PrintDrop(<span class="string">&quot;arc&quot;</span>));
+
+<span class="comment">/*
+pub fn new(data: T) -&gt; Arc&lt;T&gt; {
+    //Start the weak pointer count as 1 which is the weak pointer that&#39;s
+    //held by all the strong pointers (kinda), see std/rc.rs for more info
+    let x: Box&lt;_&gt; = Box::new(ArcInner {
+        strong: atomic::AtomicUsize::new(1),
+        weak: atomic::AtomicUsize::new(1),
+        data,
+    });
+    unsafe { Self::from_inner(Box::leak(x).into()) }
+}
+
+ pub const fn leak&lt;&#39;a&gt;(b: Self) -&gt; &amp;&#39;a mut T
+where
+    A: &#39;a,
+{
+    unsafe { &amp;mut *mem::ManuallyDrop::new(b).0.as_ptr() }
+}
+
+pub fn into_raw(self) -&gt; *const T {
+    let result = self.as_ptr();
+    mem::forget(self);
+    result
+}
+ */</span></code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0A%2F%2F%20%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%20%E6%A1%88%E4%BE%8B%201%0A%2F%2F%20drop%EF%BC%9A%20%E6%98%AFRust%E8%87%AA%E5%8A%A8%E7%AE%A1%E7%90%86%E5%86%85%E5%AD%98%E7%9A%84%E6%9C%BA%E5%88%B6%EF%BC%8C%E4%B9%9F%E6%98%AF%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%9A%84%E6%9C%BA%E5%88%B6%0Afn%20main()%20%7B%0Astruct%20PrintDrop(%26'static%20str)%3B%0Aimpl%20Drop%20for%20PrintDrop%20%7B%0A%20%20%20%20fn%20drop(%26mut%20self)%20%7B%0A%20%20%20%20%20%20%20%20println!(%22Dropping%20%7B%3A%3F%7D%22%2C%20self.0)%3B%0A%20%20%20%20%7D%0A%7D%0A%0A%2F%2F%20%E5%85%88%E4%B8%A2%E5%BC%83y%2C%E5%90%8E%E4%B8%A2%E5%BC%83x%0Alet%20a%20%3D%20PrintDrop(%22x%22)%3B%0Alet%20a%20%3D%20PrintDrop(%22y%22)%3B%0A%0A%2F%2F%20%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%20%E6%A1%88%E4%BE%8B%202%0A%2F%2F%20%E5%85%83%E7%BB%84%E6%9E%90%E6%9E%84%20%E5%85%83%E7%BB%84%E5%86%85%E9%83%A8%E6%8C%89%E7%85%A7%E5%AE%9A%E4%B9%89%E9%A1%BA%E5%BA%8F%E6%9E%90%E6%9E%84%0Alet%20tup1%20%3D%20(PrintDrop(%22x%22)%2C%20PrintDrop(%22y%22)%2C%20PrintDrop(%22z%22))%3B%0Alet%20tup2%20%3D%20(PrintDrop(%221%22)%2C%20PrintDrop(%22z%22)%2C%20PrintDrop(%223%22))%3B%0A%0A%2F%2F%20%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%20%E6%A1%88%E4%BE%8B%203%0Alet%20tup3%20%3D%20(PrintDrop(%22a%22)%2C%20PrintDrop(%22b%22)%2C%20PrintDrop(%22c%22))%3B%0A%2F%2F%20panic%E4%BC%9A%E5%AF%BC%E8%87%B4%E6%95%B4%E4%B8%AAtuple%E6%9C%80%E5%90%8E%E8%A2%AB%E6%9E%90%E6%9E%84%0A%2F%2F%20%E5%86%85%E9%83%A8%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%E4%B9%9F%E4%BC%9A%E5%8F%98%0A%2F%2F%20%E5%B9%B6%E4%B8%94%E5%AF%BC%E8%87%B4%E5%90%8E%E9%9D%A2%E7%9A%84%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E4%B8%8D%E4%BC%9A%E8%B0%83%E7%94%A8%0A%2F%2F%20%20%20%20%20let%20tup4%20%3D%20(PrintDrop(%22x%22)%2C%20PrintDrop(%22y%22)%2C%20panic!())%3B%0A%0A%2F%2F%20%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%20%E6%A1%88%E4%BE%8B%204%0A%2F%2F%20%E5%85%88drop%20%E8%87%AA%E8%BA%AB%EF%BC%8C%E7%84%B6%E5%90%8E%E5%86%8D%E6%8C%89%E7%85%A7%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80drop%0Astruct%20Foo%20%7B%0A%20%20%20%20bar%3A%20PrintDrop%2C%0A%20%20%20%20baz%3A%20PrintDrop%2C%0A%7D%0A%0Aimpl%20Drop%20for%20Foo%20%7B%0A%20%20%20%20fn%20drop(%26mut%20self)%20%7B%0A%20%20%20%20%20%20%20%20println!(%22Dropping%20Foo%22)%0A%20%20%20%20%7D%0A%7D%0A%0Alet%20foo%20%3D%20Foo%20%7B%0A%20%20%20%20bar%3A%20PrintDrop(%22bar%22)%2C%0A%20%20%20%20baz%3A%20PrintDrop(%22baz%22)%2C%0A%7D%3B%0A%0A%2F%2F%20%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%20%E6%A1%88%E4%BE%8B%205%20%E9%97%AD%E5%8C%85%20%E6%8D%95%E8%8E%B7%E6%9C%AA%E4%BF%AE%E6%94%B9%0A%2F%2F%20%E6%8C%89%E7%85%A7%E6%8D%95%E8%8E%B7%E9%A1%BA%E5%BA%8F%0Alet%20z%20%3D%20PrintDrop(%22z%22)%3B%0Alet%20x%20%3D%20PrintDrop(%22x%22)%3B%0Alet%20y%20%3D%20PrintDrop(%22y%22)%3B%0A%0Alet%20closure%20%3D%20move%20%7C%7C%20%7B%0A%20%20%20%20y%3B%0A%20%20%20%20z%3B%0A%20%20%20%20x%0A%7D%3B%0A%2F%2F%E7%AD%89%E4%BB%B7%E4%BA%8E%EF%BC%9A%E7%94%9F%E6%88%90%E7%9A%84%E5%8C%BF%E5%90%8D%E7%BB%93%E6%9E%84%E4%BD%93%0A%2F%2F%E6%89%80%E4%BB%A5%E6%8C%89%E7%85%A7%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80%E6%9E%90%E6%9E%84%0Astruct%20Closure%20%7B%0A%20%20%20%20y%3A%20PrintDrop%2C%0A%20%20%20%20z%3A%20PrintDrop%2C%0A%20%20%20%20x%3A%20PrintDrop%2C%0A%7D%0A%0A%2F%2F%20%E6%9E%90%E6%9E%84%E9%A1%BA%E5%BA%8F%20%E6%A1%88%E4%BE%8B%205%20%E9%97%AD%E5%8C%85%20%E5%85%88%E5%AE%9A%E4%B9%89%E7%9A%84%E5%90%8E%E6%9E%90%E6%9E%84%0A%2F%2F%20%E5%85%88%E6%9E%90%E6%9E%84%E5%AD%90%E5%8C%BA%E5%9F%9F%E7%9A%84%EF%BC%8C%E5%BF%85%E9%A1%BB%E7%AC%A6%E5%90%88%E5%AE%89%E5%85%A8%E9%80%BB%E8%BE%91%0A%0Alet%20z%20%3D%20PrintDrop(%22z%22)%3B%0Alet%20x%20%3D%20PrintDrop(%22x%22)%3B%0Alet%20y%20%3D%20PrintDrop(%22y%22)%3B%0A%0Alet%20closure%20%3D%20move%20%7C%7C%20%7B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20let%20z_ref%20%3D%20%26z%3B%0A%20%20%20%20%7D%0A%20%20%20%20x%3B%0A%20%20%20%20y%3B%0A%20%20%20%20z%3B%0A%7D%3B%0A%0A%2F%2F%20%E4%BD%BF%E7%94%A8forget%20%2F%20ManuallyDrop%20%2F%20unsafe%20rust%E9%81%BF%E5%85%8D%E8%87%AA%E5%8A%A8drop%0A%2F%2F%20ManuallyDrop%3CT%3E%0A%2F%2F%20%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E5%9C%A8Rust%E4%B8%AD%E4%B8%8D%E6%98%AF%E4%B8%8D%E5%AE%89%E5%85%A8%EF%BC%8C%E9%A1%B6%E5%A4%9A%E5%8D%A0%E7%94%A8%E5%86%85%E5%AD%98%0A%2F%2F%20%E5%BC%B1%E5%BC%95%E7%94%A8%E5%92%8C%E6%89%80%E6%9C%89%E6%9D%83%E6%B2%A1%E5%85%B3%E7%B3%BB%EF%BC%8C%E4%B8%8D%E8%83%BD%E8%B0%83%E7%94%A8%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%EF%BC%8C%E4%BD%BF%E7%94%A8forget%E5%BF%98%E6%8E%89%E6%89%80%E6%9C%89%E6%9D%83%EF%BC%8C%E5%B0%B1%E4%B8%8D%E4%BC%9A%E8%B0%83%E7%94%A8%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%0Ause%20std%3A%3Async%3A%3AArc%3B%0Alet%20arc%20%3D%20Arc%3A%3Anew(PrintDrop(%22arc%22))%3B%0A%0A%2F*%0Apub%20fn%20new(data%3A%20T)%20-%3E%20Arc%3CT%3E%20%7B%0A%20%20%20%20%2F%2FStart%20the%20weak%20pointer%20count%20as%201%20which%20is%20the%20weak%20pointer%20that's%0A%20%20%20%20%2F%2Fheld%20by%20all%20the%20strong%20pointers%20(kinda)%2C%20see%20std%2Frc.rs%20for%20more%20info%0A%20%20%20%20let%20x%3A%20Box%3C_%3E%20%3D%20Box%3A%3Anew(ArcInner%20%7B%0A%20%20%20%20%20%20%20%20strong%3A%20atomic%3A%3AAtomicUsize%3A%3Anew(1)%2C%0A%20%20%20%20%20%20%20%20weak%3A%20atomic%3A%3AAtomicUsize%3A%3Anew(1)%2C%0A%20%20%20%20%20%20%20%20data%2C%0A%20%20%20%20%7D)%3B%0A%20%20%20%20unsafe%20%7B%20Self%3A%3Afrom_inner(Box%3A%3Aleak(x).into())%20%7D%0A%7D%0A%0A%20pub%20const%20fn%20leak%3C'a%3E(b%3A%20Self)%20-%3E%20%26'a%20mut%20T%0Awhere%0A%20%20%20%20A%3A%20'a%2C%0A%7B%0A%20%20%20%20unsafe%20%7B%20%26mut%20*mem%3A%3AManuallyDrop%3A%3Anew(b).0.as_ptr()%20%7D%0A%7D%0A%0Apub%20fn%20into_raw(self)%20-%3E%20*const%20T%20%7B%0A%20%20%20%20let%20result%20%3D%20self.as_ptr()%3B%0A%20%20%20%20mem%3A%3Aforget(self)%3B%0A%20%20%20%20result%0A%7D%0A%20*%2F%0A%7D&amp;edition=2021">Run</a></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="from_principle_to_practice" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0-nightly (c5d82ed7a 2022-11-19)" data-search-js="search-df80cc3cb87b6482.js" data-settings-js="settings-7e1cf5cc683233f7.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
