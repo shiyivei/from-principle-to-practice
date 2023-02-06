@@ -28,12 +28,41 @@ fn main() {
         Result(u8),
         Exited,
     }
+    struct WorkerState {
+        ongoing: i16,
+        exiting: bool,
+    }
+    impl WorkerState {
+        fn init() -> Self {
+            WorkerState {
+                ongoing: 0,
+                exiting: false,
+            }
+        }
+
+        fn set_ongoing(&mut self, count: i16) {
+            self.ongoing += count;
+        }
+
+        fn set_exiting(&mut self, exit_state: bool) {
+            self.exiting = exit_state
+        }
+
+        fn is_exiting(&self) -> bool {
+            self.exiting == true
+        }
+
+        fn is_nomore_work(&self) -> bool {
+            self.ongoing == 0
+        }
+    }
+
     let (work_sender, work_receiver) = unbounded();
     let (result_sender, result_receiver) = unbounded();
     // 添加一个新的Channel，Worker使用它来通知“并行”组件已经完成了一个工作单元
     let (pool_result_sender, pool_result_receiver) = unbounded();
-    let mut ongoing_work = 0;
-    let mut exiting = false;
+    let mut worker_state = WorkerState::init();
+
     // 使用线程池
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(2)
@@ -50,7 +79,7 @@ fn main() {
                         let pool_result_sender = pool_result_sender.clone();
 
                         // 注意，这里正在池上启动一个新的工作单元。
-                        ongoing_work += 1;
+                        worker_state.set_ongoing(1);
 
                         pool.spawn(move || {
                             // 1. 发送结果给「主组件」
@@ -62,28 +91,28 @@ fn main() {
                     },
                     Ok(WorkMsg::Exit) => {
                         // N注意，这里接收请求并退出
-                        exiting = true;
+                        worker_state.set_exiting(true);
 
                         // 如果没有正则进行的工作则立即退出
-                        if ongoing_work == 0 {
-                            let _ = result_sender.send(ResultMsg::Exited);
-                            break;
-                        }
+                        if worker_state.is_nomore_work() {
+                         result_sender.send(ResultMsg::Exited);
+                         break;
+                     }
                     },
                     _ => panic!("Error receiving a WorkMsg."),
                 }
             },
             recv(pool_result_receiver) -> _ => {
-                if ongoing_work == 0 {
+                if worker_state.is_nomore_work() {
                     panic!("Received an unexpected pool result.");
                 }
 
                 // 注意，一个工作单元已经被完成
-                ongoing_work -=1;
+                worker_state.set_ongoing(-1);
 
                 // 如果没有正在进行的工作，并且接收到了退出请求，那么就退出
-                if ongoing_work == 0 && exiting {
-                    let _ = result_sender.send(ResultMsg::Exited);
+                if  worker_state.is_nomore_work() && worker_state.is_exiting() {
+                    result_sender.send(ResultMsg::Exited);
                     break;
                 }
             },
