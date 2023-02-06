@@ -14,5 +14,6 @@ pub mod mod_member;
 pub mod ownership;
 pub mod pattern_match;
 pub mod smart_pointer;
+pub mod threads_and_concurrency;
 pub mod trait_impl;
 pub mod type_system;

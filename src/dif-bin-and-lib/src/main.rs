@@ -1,78 +1,81 @@
 #[allow(unused)]
 
 fn main() {
-    // trait 对象高阶生命参数 for 在多态调用中的应用
-    use rand;
-    use std::io::Read;
+    // 在主线程和子线程之间通过消息来共享数据
 
-    trait CheckSum<R: Read> {
-        fn calc(&mut self, r: R) -> Vec<u8>;
+    use crossbeam_channel;
+    use rayon;
+
+    use crossbeam_channel::unbounded;
+    //use parking_lot::{Condvar, Mutex}; // 比标准库更小、更快更安全
+    //use std::sync::Arc; // 但未实现 Arc
+    use std::collections::HashMap;
+
+    use std::sync::{Arc, Condvar, Mutex};
+
+    use std::thread;
+
+    // 主组件和其他组件并行运行
+
+    // 发送消息体
+    enum WorkMsg {
+        Work(u8),
+        Exit,
     }
 
-    struct Xor;
+    // 返回消息体
+    enum ResultMsg {
+        Result(u8),
+        Exited,
+    }
 
-    impl<R: Read> CheckSum<R> for Xor {
-        fn calc(&mut self, mut r: R) -> Vec<u8> {
-            let mut res: u8 = 0;
-            let mut buf = [0u8; 8];
+    // 创建两个通道
 
-            loop {
-                let read = r.read(&mut buf).unwrap();
-                if read == 0 {
-                    break;
-                }
+    let (worker_sender, worker_receiver) = unbounded();
+    let (receiver_sender, receiver_receiver) = unbounded();
 
-                for b in &buf[..read] {
-                    res ^= b;
-                }
+    // 创建子线程
+
+    let _ = thread::spawn(move || loop {
+        // 循环收消息
+        match worker_receiver.recv() {
+            //收到工作消息
+            Ok(WorkMsg::Work(num)) => {
+                // 回消息在工作
+                let _ = receiver_sender.send(ResultMsg::Result(num));
             }
-            vec![res]
-        }
-    }
-
-    struct Add;
-
-    impl<R: Read> CheckSum<R> for Add {
-        fn calc(&mut self, mut r: R) -> Vec<u8> {
-            let mut res: u8 = 0;
-            let mut buf = [0u8; 8];
-
-            loop {
-                let read = r.read(&mut buf).unwrap();
-                if read == 0 {
-                    break;
-                }
-                // late bound
-                for b in &buf[..read] {
-                    let tmp = res as u16 + *b as u16;
-                    res = tmp as u8;
-                }
+            // 收到停止消息
+            Ok(WorkMsg::Exit) => {
+                // 回消息已停止
+                let _ = receiver_sender.send(ResultMsg::Exited);
+                break;
             }
-            vec![res]
+            _ => panic!("Error receiving a WorkMsg"),
         }
-    }
+    });
 
-    let mut buf = [0u8; 128];
+    // 主线程发送三个消息
+    let _ = worker_sender.send(WorkMsg::Work(0));
+    let _ = worker_sender.send(WorkMsg::Work(1));
+    let _ = worker_sender.send(WorkMsg::Exit);
 
-    // late bound
-    let mut checker: Box<dyn for<'f> CheckSum<&'f [u8]>> = if rand::random() {
-        println!("Initializing Xor Checksum");
-        Box::new(Xor)
-    } else {
-        println!("Initializing Add Checksum");
-        Box::new(Add)
-    };
+    let mut counter = 0;
 
-    let mut data = "data.read(&mut buf).unwrap()".as_bytes();
-    let mut i = 0;
-
+    // 主线程循环
     loop {
-        let chunk_size = data.read(&mut buf).unwrap();
-        if chunk_size == 0 {
-            break;
+        match receiver_receiver.recv() {
+            Ok(ResultMsg::Result(num)) => {
+                //断言，保证顺序执行
+                assert_eq!(num, counter);
+                counter += 1;
+            }
+            Ok(ResultMsg::Exited) => {
+                //断言，保证顺序执行
+                assert_eq!(2, counter);
+                break;
+            }
+
+            _ => panic!("Error receiving a ResultMsg"),
         }
-        let cs = checker.calc(&buf[..chunk_size]);
-        println!("CheckSum {} is {:?}", i, cs);
-        i += 1;
     }
 }
