@@ -2,10 +2,10 @@
 
 fn main() {
     // 在主线程和子线程之间通过消息来共享数据
-
     use crossbeam_channel;
     use rayon;
 
+    use crossbeam_channel::select;
     use crossbeam_channel::unbounded;
     //use parking_lot::{Condvar, Mutex}; // 比标准库更小、更快更安全
     //use std::sync::Arc; // 但未实现 Arc
@@ -28,54 +28,86 @@ fn main() {
         Result(u8),
         Exited,
     }
-
-    // 创建两个通道
-
-    let (worker_sender, worker_receiver) = unbounded();
-    let (receiver_sender, receiver_receiver) = unbounded();
-
-    // 创建子线程
+    let (work_sender, work_receiver) = unbounded();
+    let (result_sender, result_receiver) = unbounded();
+    // 添加一个新的Channel，Worker使用它来通知“并行”组件已经完成了一个工作单元
+    let (pool_result_sender, pool_result_receiver) = unbounded();
+    let mut ongoing_work = 0;
+    let mut exiting = false;
+    // 使用线程池
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(2)
+        .build()
+        .unwrap();
 
     let _ = thread::spawn(move || loop {
-        // 循环收消息
-        match worker_receiver.recv() {
-            //收到工作消息
-            Ok(WorkMsg::Work(num)) => {
-                // 回消息在工作
-                let _ = receiver_sender.send(ResultMsg::Result(num));
-            }
-            // 收到停止消息
-            Ok(WorkMsg::Exit) => {
-                // 回消息已停止
-                let _ = receiver_sender.send(ResultMsg::Exited);
-                break;
-            }
-            _ => panic!("Error receiving a WorkMsg"),
+        // 使用 corssbeam 提供的 select! 宏 选择一个就绪工作
+        select! {
+            recv(work_receiver) -> msg => {
+                match msg {
+                    Ok(WorkMsg::Work(num)) => {
+                        let result_sender = result_sender.clone();
+                        let pool_result_sender = pool_result_sender.clone();
+
+                        // 注意，这里正在池上启动一个新的工作单元。
+                        ongoing_work += 1;
+
+                        pool.spawn(move || {
+                            // 1. 发送结果给「主组件」
+                            let _ = result_sender.send(ResultMsg::Result(num));
+
+                            // 2. 让并行组件知道这里完成了一个工作单元
+                            let _ = pool_result_sender.send(());
+                        });
+                    },
+                    Ok(WorkMsg::Exit) => {
+                        // N注意，这里接收请求并退出
+                        exiting = true;
+
+                        // 如果没有正则进行的工作则立即退出
+                        if ongoing_work == 0 {
+                            let _ = result_sender.send(ResultMsg::Exited);
+                            break;
+                        }
+                    },
+                    _ => panic!("Error receiving a WorkMsg."),
+                }
+            },
+            recv(pool_result_receiver) -> _ => {
+                if ongoing_work == 0 {
+                    panic!("Received an unexpected pool result.");
+                }
+
+                // 注意，一个工作单元已经被完成
+                ongoing_work -=1;
+
+                // 如果没有正在进行的工作，并且接收到了退出请求，那么就退出
+                if ongoing_work == 0 && exiting {
+                    let _ = result_sender.send(ResultMsg::Exited);
+                    break;
+                }
+            },
         }
     });
 
-    // 主线程发送三个消息
-    let _ = worker_sender.send(WorkMsg::Work(0));
-    let _ = worker_sender.send(WorkMsg::Work(1));
-    let _ = worker_sender.send(WorkMsg::Exit);
+    let _ = work_sender.send(WorkMsg::Work(0));
+    let _ = work_sender.send(WorkMsg::Work(1));
+    let _ = work_sender.send(WorkMsg::Exit);
 
     let mut counter = 0;
 
-    // 主线程循环
     loop {
-        match receiver_receiver.recv() {
-            Ok(ResultMsg::Result(num)) => {
-                //断言，保证顺序执行
-                assert_eq!(num, counter);
+        match result_receiver.recv() {
+            Ok(ResultMsg::Result(_)) => {
+                // 计数当前完成的工作单元
                 counter += 1;
             }
             Ok(ResultMsg::Exited) => {
-                //断言，保证顺序执行
+                // 断言检测：是在接收到两个请求以后退出的
                 assert_eq!(2, counter);
                 break;
             }
-
-            _ => panic!("Error receiving a ResultMsg"),
+            _ => panic!("Error receiving a ResultMsg."),
         }
     }
 }
