@@ -296,6 +296,132 @@ trait StarkFamily {
     }
 
 ```
+### 使用trait对象重载函数
+```
+
+ // 不能将trait中的方法为相同的类型做不同实现
+    // 一个能实现此目标的方案
+
+    trait Blanket<T> {
+        fn blanket(&self) -> &'static str;
+    }
+
+    impl Blanket<u8> for u8 {
+        fn blanket(&self) -> &'static str {
+            "u8"
+        }
+    }
+
+    // trait对象
+    impl<T: ToString> Blanket<&dyn ToString> for T {
+        fn blanket(&self) -> &'static str {
+            "ToString"
+        }
+    }
+
+    trait CloneBlanket {}
+
+    impl<T: Clone> Blanket<&dyn CloneBlanket> for T {
+        fn blanket(&self) -> &'static str {
+            "Clone"
+        }
+    }
+
+    trait TryIntoBlanket<T> {
+        type Error;
+    }
+
+    impl<T, E, U> Blanket<&dyn TryIntoBlanket<T, Error = E>> for U
+    where
+        U: TryInto<T, Error = E>,
+    {
+        fn blanket(&self) -> &'static str {
+            "to_string"
+        }
+    }
+
+    impl<T: AsRef<U>, U: ?Sized> Blanket<&dyn AsRef<U>> for T {
+        fn blanket(&self) -> &'static str {
+            "as_ref"
+        }
+    }
+    ```
+### trait 对象与 Self：Sized
+    ```
+     // trait 中有默认实现时
+    // 并且默认实现的函数体中包含Self
+    trait WithConstructor {
+        fn build(param: usize) -> Self
+        where
+            Self: Sized;
+        fn new(param: usize) -> Self
+        where
+            Self: Sized,
+        {
+            Self::build(0)
+        }
+
+        fn t(&self);
+    }
+
+    struct A;
+
+    impl WithConstructor for A {
+        fn t(&self) {
+            println!("hello");
+        }
+        fn build(param: usize) -> Self
+        where
+            Self: Sized,
+        {
+            A
+        }
+    }
+
+    let a = &A;
+    a.t()
+
+    ```
+     trait Test {
+        fn foo(&self);
+
+        fn works(self: Box<Self>) {
+            println!("hello");
+        }
+
+        fn fails(self: Box<Self>)
+        // where
+        //     Self: Sized, //限定了被调用,关闭；？Sized 在类型声明时使用
+        {
+            self.foo();
+        }
+    }
+
+    struct Concrete;
+
+    impl Concrete {
+        fn hello(&self) {
+            println!("hello");
+        }
+    }
+
+    impl Test for Concrete {
+        fn foo(&self) {
+            ()
+        }
+        fn works(self: Box<Self>) {
+            self.hello();
+        }
+        // 没有实现fails
+    }
+
+    let concrete: Box<dyn Test> = Box::new(Concrete);
+    // concrete.fails();
+    concrete.works();
+
+    ```
+
+
 
 */
 

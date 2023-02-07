@@ -2587,7 +2587,91 @@ use core::ops::Add;
     }
 ```
 
+#### 3.5.2.5 trait 覆盖实现
 
+Rust trait中的方法不允许覆盖实现
+
+但是可以使用trait 对象实现
+
+#### 3.5.2.6 trait 与 Self：Sized
+
+什么时候需要用到。Rust中所有类型，默认都是T：Sized
+
+```
+ // trait 中有默认实现时
+    // 并且默认实现的函数体中包含Self
+    trait WithConstructor {
+        fn build(param: usize) -> Self
+        where
+            Self: Sized;
+        fn new(param: usize) -> Self
+        where
+            Self: Sized,
+        {
+            Self::build(0)
+        }
+
+        fn t(&self);
+    }
+
+    struct A;
+
+    impl WithConstructor for A {
+        fn t(&self) {
+            println!("hello");
+        }
+        fn build(param: usize) -> Self
+        where
+            Self: Sized,
+        {
+            A
+        }
+    }
+
+    let a = &A;
+    a.t()
+```
+
+#### 3.5.2.7 trait 对象与Box
+
+```
+ trait Test {
+        fn foo(&self);
+
+        fn works(self: Box<Self>) {
+            println!("hello");
+        }
+
+        fn fails(self: Box<Self>)
+        // where
+        //     Self: Sized, //限定了被调用,关闭；？Sized 在类型声明时使用
+        {
+            self.foo();
+        }
+    }
+
+    struct Concrete;
+
+    impl Concrete {
+        fn hello(&self) {
+            println!("hello");
+        }
+    }
+
+    impl Test for Concrete {
+        fn foo(&self) {
+            ()
+        }
+        fn works(self: Box<Self>) {
+            self.hello();
+        }
+        // 没有实现fails
+    }
+
+    let concrete: Box<dyn Test> = Box::new(Concrete);
+    // concrete.fails();
+    concrete.works();
+```
 
 # 3 Rust核心库
 
