@@ -1,0 +1,58 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="自旋锁"><title>spinlock in from_principle_to_practice::concurrency_system::nolock_code - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0ef3deca4ed45ad8.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-f501212b8b071243.css"><link rel="stylesheet" disabled href="../../../static.files/dark-e92fc12c34ff89d3.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-a0090c8b1ced384f.css"><script id="default-settings" ></script><script src="../../../static.files/storage-3891ce972e3a2bf8.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-364b95f387bc3166.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../../../from_principle_to_practice/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../../../from_principle_to_practice/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><div class="sidebar-elems"><h2><a href="index.html">In from_principle_to_practice::concurrency_system::nolock_code</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Function <a href="../../index.html">from_principle_to_practice</a>::<wbr><a href="../index.html">concurrency_system</a>::<wbr><a href="index.html">nolock_code</a>::<wbr><a class="fn" href="#">spinlock</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../../../src/from_principle_to_practice/concurrency_system/nolock_code.rs.html#70">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub fn spinlock()</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h4 id="自旋锁"><a href="#自旋锁">自旋锁</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code> <span class="kw">use </span>std::sync::atomic::{AtomicUsize, Ordering};
+    <span class="kw">use </span>std::sync::Arc;
+    <span class="kw">use </span>std::thread;
+    <span class="kw">use </span>std::time::Duration;
+
+    <span class="comment">// 实现一个自旋锁
+
+    </span><span class="kw">let </span>spinlock = Arc::new(AtomicUsize::new(<span class="number">1</span>));
+
+    <span class="kw">let </span>spinlock_clone = Arc::clone(<span class="kw-2">&amp;</span>spinlock);
+
+    <span class="kw">let </span>thread = thread::spawn(<span class="kw">move </span>|| {
+        spinlock_clone.store(<span class="number">1</span>, Ordering::SeqCst);
+        <span class="kw">let </span>t = Duration::from_secs(<span class="number">3</span>);
+        std::thread::sleep(t);
+
+        spinlock_clone.store(<span class="number">0</span>, Ordering::SeqCst);
+    });
+
+    <span class="kw">while </span>spinlock.load(Ordering::SeqCst) != <span class="number">0 </span>{}
+
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(panic) = thread.join() {
+        <span class="macro">println!</span>(<span class="string">&quot;Thread had an error {:?}&quot;</span>, panic)
+    }</code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0Afn+main()+%7B%0Ause+std::sync::atomic::%7BAtomicUsize,+Ordering%7D;%0A++++use+std::sync::Arc;%0A++++use+std::thread;%0A++++use+std::time::Duration;%0A%0A++++//+%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E8%87%AA%E6%97%8B%E9%94%81%0A%0A++++let+spinlock+=+Arc::new(AtomicUsize::new(1));%0A%0A++++let+spinlock_clone+=+Arc::clone(%26spinlock);%0A%0A++++let+thread+=+thread::spawn(move+%7C%7C+%7B%0A++++++++spinlock_clone.store(1,+Ordering::SeqCst);%0A++++++++let+t+=+Duration::from_secs(3);%0A++++++++std::thread::sleep(t);%0A%0A++++++++spinlock_clone.store(0,+Ordering::SeqCst);%0A++++%7D);%0A%0A++++while+spinlock.load(Ordering::SeqCst)+!=+0+%7B%7D%0A%0A++++if+let+Err(panic)+=+thread.join()+%7B%0A++++++++println!(%22Thread+had+an+error+%7B:?%7D%22,+panic)%0A++++%7D%0A%7D&amp;edition=2021">Run</a></div>
+<h4 id="使用原子类型实现轻量级的锁"><a href="#使用原子类型实现轻量级的锁">使用原子类型实现轻量级的锁</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>   <span class="kw">use </span>core::sync::atomic::AtomicBool;
+   <span class="kw">use </span>std::sync::atomic::Ordering;
+
+   <span class="kw">struct </span>LightLock(AtomicBool);
+
+   <span class="kw">impl </span>LightLock {
+       <span class="kw">pub fn </span>new() -&gt; LightLock {
+           LightLock(AtomicBool::new(<span class="bool-val">false</span>))
+       }
+
+       <span class="kw">pub fn </span>try_lock&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;LightGuard&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+           <span class="kw">let </span>was_locked = <span class="self">self</span>.<span class="number">0</span>.swap(<span class="bool-val">true</span>, Ordering::Acquire);
+
+           <span class="kw">if </span>was_locked {
+               <span class="prelude-val">None
+           </span>} <span class="kw">else </span>{
+               <span class="prelude-val">Some</span>(LightGuard { lock: <span class="self">self </span>})
+           }
+       }
+   }
+
+   <span class="kw">struct </span>LightGuard&lt;<span class="lifetime">&#39;a</span>&gt; {
+       lock: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>LightLock,
+   }
+
+   <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Drop <span class="kw">for </span>LightGuard&lt;<span class="lifetime">&#39;a</span>&gt; {
+       <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+           <span class="self">self</span>.lock.<span class="number">0</span>.store(<span class="bool-val">false</span>, Ordering::Release)
+       }
+   }
+</code></pre><a class="test-arrow" target="_blank" href="https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0Afn+main()+%7B%0Ause+core::sync::atomic::AtomicBool;%0A+++use+std::sync::atomic::Ordering;%0A%0A+++struct+LightLock(AtomicBool);%0A%0A+++impl+LightLock+%7B%0A+++++++pub+fn+new()+-%3E+LightLock+%7B%0A+++++++++++LightLock(AtomicBool::new(false))%0A+++++++%7D%0A%0A+++++++pub+fn+try_lock%3C'a%3E(%26'a+self)+-%3E+Option%3CLightGuard%3C'a%3E%3E+%7B%0A+++++++++++let+was_locked+=+self.0.swap(true,+Ordering::Acquire);%0A%0A+++++++++++if+was_locked+%7B%0A+++++++++++++++None%0A+++++++++++%7D+else+%7B%0A+++++++++++++++Some(LightGuard+%7B+lock:+self+%7D)%0A+++++++++++%7D%0A+++++++%7D%0A+++%7D%0A%0A+++struct+LightGuard%3C'a%3E+%7B%0A+++++++lock:+%26'a+mut+LightLock,%0A+++%7D%0A%0A+++impl%3C'a%3E+Drop+for+LightGuard%3C'a%3E+%7B%0A+++++++fn+drop(%26mut+self)+%7B%0A+++++++++++self.lock.0.store(false,+Ordering::Release)%0A+++++++%7D%0A+++%7D%0A%7D&amp;edition=2021">Run</a></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="from_principle_to_practice" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (e1eaa2d5d 2023-02-06)" data-search-js="search-28136cea55c34037.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

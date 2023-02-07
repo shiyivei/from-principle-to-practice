@@ -2148,9 +2148,444 @@ Rust使用了强大的类型系统以及两个专用的trait来在编译期时�
 
 ### 3.4.3 构建无悔的并发系统
 
+并发编程需要注意的三点：
+
+原子性：保证操作是原子的
+
+可见性：保证数据是同步的
+
+顺序性：保证操作的顺序是正确的
+
+并发编程的方式：
+
+同步锁和无锁编程
+
+锁带来的问题
+
+性能：无锁编程可以最大化减少线程上下文切换、线程等待
+
+死锁：引入无锁编程就不会产生死锁
+
+无锁编程主要依靠原子类型，性能上并不总是优于锁编程
+
+无锁编程和计算机组成密切相关：现代计算机一般都是多核三级缓存，带来缓存一致性问题；CPU指令重排；编译器指令重排。用内存屏障解决问题
+
+内存屏障允许开发者在编写代码时在需要的地方加入它：内存屏障是指一种操作，它确保在该操作之前的内存访问完成，并且在该操作之后的内存访问不会在该操作之前执行。这有助于在多线程环境中维护内存的一致性和避免数据竞争。
+
+CPU有四种屏障
+
+内存模型：获取语义和释放语义
+
+1. 多线程并发
+
 使用channel 和 condvar 模拟并行组件。Rust 只保证语言层面的安全，逻辑层面的安全并不保证
 
-并发模型的最佳默认模式：事件循环
+并发模型的最佳默认模式：事件循环（event-loop）
+
+### 3.4.4 无锁并发
+
+2. 无锁并发
+
+原子类型：原子布尔值和数字，都提供了Ordering内存顺序：5种顺序，和LLVM以及C++20一致
+
+原子类型还分硬件架构，ARM上的Linux没有原子类型
+
+Rust提供了条件编译
+
+内存顺序
+
+```
+pub enum Ordering {
+
+	Relaxed,原子类型只保证原子操作，不指定内存顺序（不指定内存屏障）
+	Release，当前线程内的所有写操作，对于其他对这个原子变量进行acquire得线程可见
+	Acquire，可以保证读到所有在Release之前发生的写入
+	AcqRel，对读取和写入施加acquire-release 语义，无法被重排
+	SeqCst,
+}
+```
+
+原子类型提供的方法：使用支持硬件的指令和方法
+
+ABA问题
+
+可以关注的库
+
+## 3.5 trait 和泛型
+
+### 3.5.1 trait
+
+![image-20230207152113795](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230207152113795.png)
+
+接口也是一种多态
+
+作为泛型的限定
+
+```
+ // trait 作为泛型限定
+    use std::string::ToString;
+
+    fn print<T: ToString>(v: T) {
+        println!("{}", v.to_string());
+    }
+```
+
+抽象类型（trait object）：因为trait中包含了很多方法，在运行时都化作trait对象。用一个trait 对象可以表示同样实现了 trait的多种类型
+
+trait 有两种分发类型：静态分发（单态化）：生成具体类型的函数
+
+静态分发还有一种语法：impl trait
+
+```
+ // 静态分发：impl trait
+
+    use std::fmt::Display;
+
+    // 返回一个实现了 Display trait 的类型
+    fn make_value<T: Display>(index: usize) -> impl Display {
+        match index {
+            0 => "Hello,World",
+            1 => "Hello,world (1)",
+            _ => panic!(),
+        }
+    }
+
+    println!("{}", make_value::<&'static str>(0));
+    println!("{}", make_value::<&'static str>(1))
+```
+
+trait与生命周期
+
+```
+ // trait 与生命周期
+    //     fn make_debug<T>(_: T) -> impl std::fmt::Debug {
+    //         42u8
+    //     }
+
+    // late bound
+    fn make_debug<'a, T: 'static>(_: &'a T) -> impl std::fmt::Debug {
+        42u8
+    }
+
+    fn test() -> impl std::fmt::Debug {
+        let value = "value".to_string();
+        make_debug(&value)
+    }
+```
+
+### 3.5.2 trait 对象
+
+是动态分发的一种
+
+Any是Rust中仅有的一种自省机制，相当于反射机制。因为rust是编译型语言，所以作用有限，智能识别static（不能是引用类型），在运行时反射。
+
+```
+ // 实现了Any trait 的类型到具体类型的转换
+    use std::fmt::Debug;
+
+    // 当函数参数是string时，可以转换为具体类型，否则什么都不干
+    fn log<T: Any + Debug>(value: &T) {
+        let value_any = value as &dyn Any; // 先转为trait 对象
+        match value_any.downcast_ref::<String>() {
+            // 转为 String
+            Some(as_string) => {
+                println!("String ({}): {}", as_string.len(), as_string)
+            }
+            None => println!("{:?}", value),
+        }
+    }
+
+    fn do_work<T: Any + Debug>(value: &T) {
+        log(value)
+    }
+
+    let my_string = "hello world".to_string();
+    do_work(&my_string);
+    let my_i8 = 100;
+    do_work(&my_i8);
+```
+
+TypeId是全局唯一，当程序重新启动会发生变化
+
+trait 对象：也是一组方法的集合
+
+```
+&dyn Trait or Box<dyn Trait> 
+```
+
+```
+use core::any::{Any, TypeId};
+    use std::sync::Arc;
+
+    // 模拟类
+    // 类的实例相当于trait 对象
+    struct Class {
+        name: String,
+        type_id: TypeId,
+    }
+
+    impl Class {
+        fn new<T: 'static>() -> Self {
+            Class {
+                name: std::any::type_name::<T>().to_string(),
+                type_id: TypeId::of::<T>(),
+            }
+        }
+    }
+
+    struct Instance {
+        inner: Arc<dyn Any>, //相当于 Box<T>
+    }
+
+    impl Instance {
+        fn new(obj: impl Any) -> Self {
+            Self {
+                inner: Arc::new(obj),
+            }
+        }
+
+        fn instance_of(&self, class: &Class) -> bool {
+            self.inner.as_ref().type_id() == class.type_id
+        }
+    }
+
+    struct Foo {};
+    struct Bar {};
+
+    let foo_class = Class::new::<Foo>();
+    let bar_class = Class::new::<Bar>();
+
+    let foo_instance = Instance::new(Foo {});
+
+    assert!(foo_instance.instance_of(&foo_class));
+    assert!(!foo_instance.instance_of(&bar_class));
+```
+
+#### 3.5.2.1 泛型和trait 对象实现模版方法
+
+多个类型实现同一个trait
+
+代表项目：actix-extras
+
+#### 3.5.2.2 trait对象的本质
+
+ trait定义了共同的行为
+
+vtable存的是函数指针集
+
+trait 对象本质上是一个虚表
+
+![image-20230207173955183](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230207173955183.png)
+
+#### 3.5.2.3 trait 对象安全的本质
+
+当多个类型实现了trait中的方法时，返回类型实例无法确定。对象安全就要确保方法能被安全的调用
+
+编译器如何确保对象安全？如果trait能实现自己就是对象安全的 
+
+```
+
+    trait StarkFamily {
+        fn last_name(&self) -> &'static str;
+        fn totem(&self) -> &'static str;
+    }
+
+    trait TullyFamily {
+        fn territory(&self) -> &'static str;
+    }
+
+    trait Children {
+        fn new(first_name: &'static str) -> Self
+        where
+            Self: Sized;
+
+        fn first_name(&self) -> &'static str;
+    }
+
+    impl StarkFamily for dyn Children {
+        fn last_name(&self) -> &'static str {
+            "Stark"
+        }
+
+        fn totem(&self) -> &'static str {
+            "Wolf"
+        }
+    }
+
+    impl TullyFamily for dyn Children {
+        fn territory(&self) -> &'static str {
+            "Riverrun City"
+        }
+    }
+
+    struct People {
+        first_name: &'static str,
+    }
+
+    impl Children for People {
+        fn new(first_name: &'static str) -> Self
+        where
+            Self: Sized,
+        {
+            println!("hello,{:?} Stark", first_name);
+            People {
+                first_name: first_name,
+            }
+        }
+        fn first_name(&self) -> &'static str {
+            self.first_name
+        }
+    }
+
+    fn fully_name(person: Box<dyn Children>) {
+        println!(
+            "--- Winter is coming, the lone {:?} dies, the packs lives ---",
+            person.totem()
+        );
+
+        let full = format!("{} {}", person.first_name(), person.last_name());
+        println!("I'm {:?}", full);
+
+        println!("My mother come from {:?}", person.territory());
+    }
+
+    let sansa = People::new("Sansa");
+    let aray = People::new("Aray");
+
+    let starks = Box::new(sansa);
+    fully_name(starks);
+
+    let starks = Box::new(aray);
+    fully_name(starks)
+```
+
+维护了两个虚表，safe_table,nosafe_vatble,where Self:sized,nosafe_vtable
+
+#### 3.5.2.4 使用Enum 代替trait
+
+当trait对象无法保证安全时的替代方案
+
+trait 对象性能比较差，因为它在运行时，想要提高性能可以转为enum
+
+```
+ // 类型不同，行为相同，通过trait实现
+    trait KnobControl {
+        fn set_position(&mut self, value: f64);
+        fn get_value(&self) -> f64;
+    }
+
+    struct LinearKnob {
+        position: f64,
+    }
+
+    struct LogarithmicKnob {
+        position: f64,
+    }
+
+    impl KnobControl for LinearKnob {
+        fn set_position(&mut self, value: f64) {
+            self.position = value
+        }
+        fn get_value(&self) -> f64 {
+            self.position
+        }
+    }
+
+    impl KnobControl for LogarithmicKnob {
+        fn set_position(&mut self, value: f64) {
+            self.position = value
+        }
+
+        fn get_value(&self) -> f64 {
+            (self.position + 1.).log2()
+        }
+    }
+
+
+// 通过enum实现
+    // 将类型抽象到枚举体中
+
+    enum Knob {
+        Linear(LinearKnob),
+        Logarithmic(LogarithmicKnob),
+    }
+
+    impl KnobControl for Knob {
+        fn set_position(&mut self, value: f64) {
+            match self {
+                Knob::Linear(inner_knob) => inner_knob.set_position(value),
+                Knob::Logarithmic(inner_knob) => inner_knob.set_position(value),
+            }
+        }
+
+        fn get_value(&self) -> f64 {
+            match self {
+                Knob::Linear(inner_knob) => inner_knob.get_value(),
+                Knob::Logarithmic(inner_knob) => inner_knob.get_value(),
+            }
+        }
+    }
+```
+
+```
+use core::ops::Add;
+    // 类型不同，行为相同，通过trait实现
+    trait KnobControl<T: Add + Add<Output = T> + Copy> {
+        fn set_position(&mut self, value: T);
+        fn get_value(&self, p: T) -> T;
+    }
+
+    struct LinearKnob<T: Add + Add<Output = T> + Copy> {
+        position: T,
+    }
+
+    struct LogarithmicKnob<T: Add + Add<Output = T> + Copy> {
+        position: T,
+    }
+
+    impl<T: Add + Add<Output = T> + Copy> KnobControl<T> for LinearKnob<T> {
+        fn set_position(&mut self, value: T) {
+            self.position = value
+        }
+        fn get_value(&self, p: T) -> T {
+            self.position
+        }
+    }
+
+    impl<T: Add + Add<Output = T> + Copy> KnobControl<T> for LogarithmicKnob<T> {
+        fn set_position(&mut self, value: T) {
+            self.position = value
+        }
+
+        fn get_value(&self, p: T) -> T {
+            self.position + p
+        }
+    }
+
+    // 通过enum实现
+    // 将类型抽象到枚举体中
+
+    enum Knob<T: Add + Add<Output = T> + Copy> {
+        Linear(LinearKnob<T>),
+        Logarithmic(LogarithmicKnob<T>),
+    }
+
+    impl<T: Add + Add<Output = T> + Copy> KnobControl<T> for Knob<T> {
+        fn set_position(&mut self, value: T) {
+            match self {
+                Knob::Linear(inner_knob) => inner_knob.set_position(value),
+                Knob::Logarithmic(inner_knob) => inner_knob.set_position(value),
+            }
+        }
+
+        fn get_value(&self, value: T) -> T {
+            match self {
+                Knob::Linear(inner_knob) => inner_knob.get_value(value),
+                Knob::Logarithmic(inner_knob) => inner_knob.get_value(value),
+            }
+        }
+    }
+```
 
 
 

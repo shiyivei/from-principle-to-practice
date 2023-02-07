@@ -5,6 +5,7 @@
 )]
 
 pub mod borrow_check;
+pub mod concurrency_system;
 pub mod expression;
 pub mod function_and_closure;
 pub mod iterator;
@@ -15,5 +16,6 @@ pub mod ownership;
 pub mod pattern_match;
 pub mod smart_pointer;
 pub mod threads_and_concurrency;
+pub mod trait_and_generics;
 pub mod trait_impl;
 pub mod type_system;
