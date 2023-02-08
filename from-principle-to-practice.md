@@ -2797,11 +2797,244 @@ result的错误需要处理，当直接使用unwrap时，如果结果是Err，�
 
 使用？
 
-### 2.7.4 Panic
+### 3.7.4 Panic
 
 Panic的两种类型：unwinding（栈展开） aborting（中止）无法恢复
 
 资源超过分配直接aborting
+
+## 3.8 元编程
+
+### 3.8.1 反射
+
+Any：Rust中中唯一的反射，运行时反射
+
+因为Rust是编译型语言，没有在运行时提供很多的反射功能。并且只有`'static`的类型才能支持动态运行时反射。
+
+```
+// case 1 反射
+    fn log<T: Any + Debug>(value: &T) {
+        // 将具体类型转换为 trait 对象
+        let value_any = value as &dyn Any;
+
+        //反射，判断类型，也叫自省
+        match value_any.downcast_ref::<String>() {
+            Some(as_string) => println!("string ({}): {}", as_string.len(), as_string),
+            None => {
+                println!("{:?}", value)
+            }
+        }
+    }
+
+    fn do_work<T: Any + Debug>(value: &T) {
+        log(value)
+    }
+
+    let my_string = "hello world".to_string();
+    do_work(&my_string);
+    let my_i8: i8 = 100;
+    do_work(&my_i8);
+
+    // 反射如何实现
+    // pub trait Any: 'static {
+    //     pub fn type_id(&self) -> TypeId;
+    // }
+
+    // 为dyn Any实现了 fn is<T:Any>(&self) -> bool;方法
+    // 他也是线程安全的
+
+    // case 2
+
+    use std::any::Any;
+
+    trait Foo: Any {
+        fn as_any(&self) -> &dyn Any;
+    }
+
+    impl<T: Any> Foo for T {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+    }
+
+    #[derive(Debug)]
+    struct Bar {}
+    #[derive(Debug)]
+    struct Baz {}
+
+    impl PartialEq for dyn Foo {
+        fn eq(&self, other: &dyn Foo) -> bool {
+            let me = self.as_any();
+            let you = other.as_any();
+
+            if me.is::<Baz>() && you.is::<Baz>() {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    let bar = Bar {};
+    let baz = Baz {};
+    let foo1 = &bar;
+    let foo2 = &baz;
+
+    println!("{:?}", foo1);
+    println!("{:?}", foo2);
+```
+
+### 2.8.2 宏
+
+宏是代码生成的一种技术，在此之前需要先理解rust编译过程
+
+![image-20230208155125198](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230208155125198.png)
+
+元编程也叫DSL，Domain Special Language
+
+#### 2.8.2.1 声明宏
+
+把宏展开为TokenStream。只做替换几乎不做计算。如果是Token匹配，就是声明宏。
+
+声明宏也是在分词阶段进行正则表达式的一种匹配
+
+![image-20230208164019747](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230208164019747.png)
+
+```
+// 声明宏：传入两个表达式，正则匹配表达式
+    // 入参
+    // 替换
+    macro_rules! unless {
+        ($arg:expr => $branch:expr) => {
+            // 自定义自己的语言
+            if !$arg {
+                $branch
+            }
+        };
+    }
+
+    fn cmp(a: i32, b: i32) {
+        unless!(a > b => println!("{} < {}", a, b))
+    }
+
+    let (a, b) = (1, 3);
+    cmp(a, b)
+```
+
+#### 2.8.2.2 过程宏
+
+1. derive 宏
+
+更加复杂，在Tokenstrem上又构建了自己的AST，为了更强大的计算
+
+以serde库为例
+
+过程宏有三种：一种是类似于声明宏那样的函数调用，第二种：派生宏，第三种：属性宏
+
+派生宏原理：把结构体解析为词条流，使用宏派生宏陪里面专门定义的词条处理的方法，然后结合自定义的AST来处理
+
+```
+#[derive(Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct S {
+        #[serde(default)]
+        f: i32,
+    }
+```
+
+如何实现过程宏？离不开过程宏三件套：syn(ast) quote(ast转为词条流) proc-macro2
+
+proc-macro2 库：使用仅限于过程宏
+
+syn（依赖于proc-macro2）和quote：配合使用，syn是把proc-macro2的TokenStream 转为AST，quote是再转回去。相当于这两个库配合又再加了一层
+
+syn提供了一些数据结构：其实是语法树
+
+过程宏的实例：Bang宏实现原理
+
+宏一般独立一个crate，几乎可以做任何事情》宏代码调试工具：darling，可以在宏代码打log，cargo expand展开查看错误
+
+第三方有哪些好用的宏代码
+
+Derive-new 和 derive-more
+
+过程宏的逻辑：解析->匹配模版->组装模版->输出为TokenStream
+
+2. 属性宏
+
+语法相对来说更加自由：案例：log-derive;rocket
+
+## 3.9 Unsafe Rust
+
+是Rust的超集，Unsafe rust也是有安全检查的
+
+以下几种情况Rust不会提供任何安全检查
+
+![image-20230208201602623](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230208201602623.png)
+
+解引用裸指针：*const T 和 *mut T l两种指针类型，因为其和C语言中的指针十分相近，所以叫原生指针
+
+原生指针的特点：
+
+1. 不保证指向合法内存，如空指针
+2. 不能像智能指针那样，自动清理内存
+3. 没有生命周期的概念,编译器不会对其进行借用检查
+4. 不能保证线程安全
+
+```
+// 解引用静态变量
+    static mut COUNTER: u32 = 0;
+    let inc = 3;
+
+    unsafe {
+        COUNTER += inc;
+        println!("Counter: {}", COUNTER);
+    }
+```
+
+safe rust构建于unsafe rust之上，凭什么safe？
+
+官方保证：1. unsafe 在调用时注明安全边界 ；2. 实现了形式化验证；3.安全数据库
+
+### 3.9.1 安全抽象
+
+从指针到引用。从不安全抽象为安全
+
+### 3.9.2 Drop检查
+
+### 3.9.3 型变
+
+协变和逆变
+
+### 3.9.4 NonNull和
+
+NonNull 协变
+
+# 4 异步编程
+
+## 4.1 异步I/O模型
+
+进行等待返回，同步，否则异步
+
+### 4.1.1同步和异步
+
+等待数据准备好这段时间
+
+调用立刻返回数据/错误，然后轮询，非阻塞
+
+现在常用的是IO多路复用：同步：数据等待和数据拷贝，第二阶段永远阻塞。多路复用也是一种同步IO模型。实现一个线程监视多个文件句柄
+
+## 4.2 epoll 和 io_uring
+
+epoll: 是一个同步的多路复用，实际上是一种事件通知机制：三个函数。两种触发机制。惊群问题已经解决
+
+io_uring：用户态和核心共享两个环形内存
+
+## 4.3 事件驱动编程模型
+
+处理IO复用的编程模型相当复杂，为了简化编程，提出了反应器模式和主动器模式
+
+## 4.4 epoll代码实践
 
 
 
