@@ -2702,7 +2702,106 @@ Rust整体的错误机制
 
 ### 3.7.1 消除失败
 
-类型系统保证函数契约
+1. 类型系统保证函数契约
+
+```
+// 1 类型系统保证函数契约
+    fn sum(a: i32, b: i32) -> i32 {
+        a + b
+    }
+
+    // sum(1u32, 2u32) 违反函数契约
+```
+
+2. 断言用于防御
+
+```
+// 2 断言用于防御
+
+    fn extend_vec(v: &mut Vec<i32>, i: i32) {
+        assert!(v.len() == 5);
+        v.push(i)
+    }
+
+    let mut vec = vec![1, 2, 3];
+    extend_vec(&mut vec, 4);
+    extend_vec(&mut vec, 5);
+    assert_eq!(5, vec[4]);
+    extend_vec(&mut vec, 6); // panic
+```
+
+### 3.7.2 错误处理：Option
+
+分层错误处理：Option 有无，Result 对错
+
+Option提供了一些方法可以方便操作，如map
+
+```
+ // 3 Option
+    let maybe_some_string = Some(String::from("hello, world!"));
+    let maybe_some_len = maybe_some_string.map(|s| s.len());
+    assert_eq!(maybe_some_len, Some(13))
+```
+
+```
+ // 返回值类型都是Option可以使用链式调用，不需要一个个unwrap处理
+    fn double(val: f64) -> f64 {
+        val * 2.
+    }
+
+    fn square(val: f64) -> f64 {
+        val.powi(2 as i32)
+    }
+
+    fn inverse(val: f64) -> f64 {
+        val * -1.
+    }
+
+    fn log(val: f64) -> Option<f64> {
+        match val.log2() {
+            x if x.is_normal() => Some(x),
+            _ => None,
+        }
+    }
+
+    fn sqrt(val: f64) -> Option<f64> {
+        match val.sqrt() {
+            x if x.is_normal() => Some(x),
+            _ => None,
+        }
+    }
+
+    let number = 20.;
+    let result = Option::from(number)
+        .map(inverse)
+        .map(double)
+        .map(inverse)
+        .and_then(log)
+        .map(square)
+        .and_then(sqrt);
+    match result {
+        Some(x) => println!("x was {:?}", x),
+        None => println!("this failed"),
+    }
+```
+
+map方法接受一个泛型参数，返回一个实现了FnOnce 闭包类型
+
+### 3.7.3 Result
+
+result的错误需要处理，当直接使用unwrap时，如果结果是Err，会发生Panic
+
+什么样的Error才算，实现了Error trait，自定义必须实现该trait
+
+引用第三方库
+
+使用？
+
+### 2.7.4 Panic
+
+Panic的两种类型：unwinding（栈展开） aborting（中止）无法恢复
+
+资源超过分配直接aborting
 
 
 

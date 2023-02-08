@@ -6,6 +6,7 @@
 
 pub mod borrow_check;
 pub mod concurrency_system;
+pub mod error_handle;
 pub mod expression;
 pub mod function_and_closure;
 pub mod iterator;
