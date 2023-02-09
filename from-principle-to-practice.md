@@ -3036,21 +3036,150 @@ io_uring：用户态和核心共享两个环形内存
 
 ## 4.4 epoll代码实践
 
+使用三个系统调用函数。安卓，Linux都用
 
+## 4.5 Reactor 代码实践
 
-# 3 Rust核心库
+事件驱动编程模型。读写，注册事件
+
+## 4.6 MiniMio代码实践
+
+跨平台抽象，mio库
+
+Linux和win有不同的系统抽象。抽象一个selector去选择不同的平台
+
+## 4.7 Mio代码实践
+
+### 4.7.1 epoll接口
+
+它是一个生产环境下的库
+
+tcp
+
+udp：poll::new 系统调用；轮询；建立UDP链接；处理等
+
+### 4.7.2 其他代码
+
+Waker;唤醒
+
+io_source 实现了Source trait
+
+对不同的平台底层进行抽象
+
+## 4.8 异步编程模型
+
+与其他语言相比的特点：
+
+1. Rust只提供零成本的异步编程抽象而不内置运行时，运行时可以替换如tokio
+2. 基于Genereator实现的future，在future的基础上提供 async/await语法糖，本质是一个状态机
+3. Node.js依赖于V8，Go内置了运行时
+
+为什么需要异步？
+
+1. 对极致性能的追求
+2. 对编程体验的追求
+
+异步编程模型的发展阶段
+
+1. callback（回掉地狱）
+2. Promise/Future（会产生很多内嵌Future）
+3. async/await：拥有了和同步代码的一致体验
+
+异步任务可以看作是一种绿色线程
+
+Future代表异步计算
+
+### 4.8.1 Future
+
+实现了该trait就可以异步计算：第三方库：future-rs
+
+### 4.8.2 编写异步echo服务
+
+1. 建立tcp链接
+2. 处理tcp 流：read /write
+3. poll/select epoll
+
+### 4.8.3 异步Task模型
+
+调度线程中的协程就是运行时。
+
+### 4.8.4 Waker实现
+
+一个task可以看作是一个线程中的微线程
+
+## 4.9 异步库源码导读
+
+异步运行时的实现机制：Future channel 是task之间通讯
+
+Pin异步运行时中相当于一个模版
+
+Future 的流相当于异步迭代器
+
+Future task
+
+## 4.10 async-await 语法
+
+async的两种用法：`async fn` 和 `async {}`
+
+Await 将暂停函数执行。如果用锁的话尽量使用Future提供的锁
 
 ```
-use core::mem::MaybeUninit;
+use std::future::Future;
+    // async 真正会返回 Future<Output = u8>, 而不是看上去的u8
+    async fn foo() -> u8 {
+        5 // 去糖后是Future
+    }
+
+    // async 块用法，返回 "impl Future<Output = u8>"
+    fn bar() -> impl Future<Output = u8> {
+        async { // 块返回值
+            let x = foo().await;
+            x + 5
+        }
+    }
 ```
 
-# 4 Rust标准库
+### 4.10.1 生成器
 
+async / await 对应底层生成器为 resume/yield。yield是暂停点。和闭包的区别在于能暂停，底层实际上是一个状态机。和闭包底层也非常相似。
 
+4.10.2 Rust
 
-# 5 Rust第三方库
+Rust解决自引用
 
+为什么要用Pin？
 
+### 4.10.2 Pin与Unpin
+
+是一种使用类型系统的解决方案。Pin防止得到可变借用乱用
+
+## 4.11 no_std异步生态
+
+核心库一般是使用在wasm和嵌入式，这些场景一版没有堆分配。所以关于堆分配的一些集合找不到
+
+运行时
+
+1. async-std 异步的，专门处理异步io
+2. tokio 最成熟的，生产级应用比较多
+3. smol-rs  轻量的运行时 封装了很多底层的库
+4. glommio
+5. bastion 目标是高可用的
+
+## 4.12 实现异步缓存
+
+Rust中的B树命中率更高。异步过程中构建组件等也是异步的。
+
+多线程或者异步使用B树需要加锁,smol 实现了一些锁和屏障.B树和HashMap使用一样的。
+
+区分同步和异步代码
+
+如何清理过期缓存？redis：按照频率，定期删除策略
+
+# 5 Rust异步Web框架
+
+## 5.1 Rocket
+
+充分的利用了
 
 # 6 知名Rust项目
 
