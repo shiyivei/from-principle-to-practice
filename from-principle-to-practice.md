@@ -3278,7 +3278,7 @@ Preactor模式：对应异步I/O，主动的事件分离和分发模型。允许
 
 ## 4.4 epoll代码实践
 
-使用三个系统调用函数。安卓，Linux都用
+使用三个系统调用函数。安卓，Linux都用。使用Reactor分发处理。epoll只支持linux
 
 ## 4.5 Reactor 代码实践
 
@@ -3295,8 +3295,6 @@ Linux和win有不同的系统抽象。抽象一个selector去选择不同的平�
 ### 4.7.1 epoll接口
 
 它是一个生产环境下的库
-
-tcp
 
 udp：poll::new 系统调用；轮询；建立UDP链接；处理等
 
