@@ -3308,30 +3308,70 @@ io_source 实现了Source trait
 
 ## 4.8 异步编程模型
 
-与其他语言相比的特点：
+### 4.8.1 与其他语言相比
 
 1. Rust只提供零成本的异步编程抽象而不内置运行时，运行时可以替换如tokio
-2. 基于Genereator实现的future，在future的基础上提供 async/await语法糖，本质是一个状态机
-3. Node.js依赖于V8，Go内置了运行时
+2. 基于Genereator实现的Future，在future的基础上提供 async/await语法糖，本质是一个状态机
+3. Node.js依赖于V8运行时，其async/await建立在Promise抽象机制（范式）上，Go内置了运行时，提供了协程
+4. Rust只提供了async/await 以及Future（基于语言层面），运行时在语言之外，可以根据不同的场景更换运行时
 
-为什么需要异步？
+### 4.8.2 为什么需要异步
 
 1. 对极致性能的追求
 2. 对编程体验的追求
 
-异步编程模型的发展阶段
+### 4.8.3 异步编程模型的发展阶段
 
 1. callback（回掉地狱）
 2. Promise/Future（会产生很多内嵌Future）
 3. async/await：拥有了和同步代码的一致体验
 
+### 4.8.4 如何理解异步任务
+
 异步任务可以看作是一种绿色线程
 
-Future代表异步计算
+异步任务的行为是模仿线程来抽象
 
-### 4.8.1 Future
+1. 线程在进程内，进异步任务在线程内
+2. 线程可以被调度切换（Linux默认抢占），异步任务也可以被调度（协作式而非抢占式）。区别在于，异步任务只在用户态没有线程的上下文切换开销
+3. 线程和异步任务都有上下文信息
+4. 线程和异步任务之间都可以通信
+5. 线程和异步任务之间都会有竞争
 
-实现了该trait就可以异步计算：第三方库：future-rs
+整个异步编程的概念，包括异步语法、异步运行时都是围绕如何建立这种[绿色线程]抽象而成的
+
+### 4.8.5 Future
+
+Future代表一个异步计算，就像Option一样
+
+```
+pub trait Future {
+    type Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;
+}
+```
+
+```
+pub enum Poll<T> {
+    Ready(T),
+    Pending,
+}
+```
+
+通过poll方法获得值有没有准备好。而std::task就是最终要创建的绿色线程，调度器要自己实现
+
+Future是惰性求值，需要创建异步运行时计算。通过Trait Wake实现这种唤醒机制
+
+```
+pub trait Wake {
+    fn wake(self: Arc<Self>);
+
+    fn wake_by_ref(self: &Arc<Self>) { ... }
+}
+```
+
+Future以及上述trait还有async和await是rust提供的最小化的定义，用于异步编程。future-rs实现了更完整的异步运行时
 
 ### 4.8.2 编写异步echo服务
 
@@ -3357,7 +3397,7 @@ Future 的流相当于异步迭代器
 
 Future task
 
-## 4.10 async-await 语法
+## 4.10 async/await 语法
 
 async的两种用法：`async fn` 和 `async {}`
 
@@ -3379,17 +3419,67 @@ use std::future::Future;
     }
 ```
 
+async 生命周期
+
+```
+async fn foo（x:&u8) -> u8 {*x}
+等价于
+
+fn foo_expanded<'a>(x:&'a u8) -> impl Future<Output =u8> + 'a {
+	async move {*x}
+}
+```
+
+```
+fn bad() -> impl Future<Output = u8> {
+	let x = 5;
+	borrow_x(&x) // 无法编译通过
+}
+
+fn good() -> impl Future<Output = u8> {
+	async {
+			let x = 5;
+			borrow_x(&x) // 可以编译通过
+	}
+}
+```
+
+多个await以及move还有join
+
+在多线程执行器中使用 await时，尽量使用futures::lock提供的锁，而不是标准库提供的锁，以避免死锁
+
+async/await 本身是个语法糖吗，解糖以后是个future，一切都是围绕future来进行的
+
 ### 4.10.1 生成器
 
 async / await 对应底层生成器为 resume/yield。yield是暂停点。和闭包的区别在于能暂停，底层实际上是一个状态机。和闭包底层也非常相似。
 
-4.10.2 Rust
+```
+let mut gen = || {
+	yield 1;
+	yield 2;
+	yield 3;
+	return 4;
+}
 
-Rust解决自引用
 
-为什么要用Pin？
+let c = Pin::new(&mut gen).rsume(());
+println!("{:?}",c);
+
+let c = Pin::new(&mut gen).rsume(());
+println!("{:?}",c);
+
+let c = Pin::new(&mut gen).rsume(());
+println!("{:?}",c);
+```
+
+可以把生成器当做迭代器用，高阶用法
+
+生成器本质上是一个状态机，与future的相比：Generator可以变为Future
 
 ### 4.10.2 Pin与Unpin
+
+Rust解决自引用，异步传递引用的安全性
 
 是一种使用类型系统的解决方案。Pin防止得到可变借用乱用
 
