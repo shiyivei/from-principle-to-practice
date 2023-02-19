@@ -3168,27 +3168,113 @@ NonNull 协变
 
 # 4 异步编程
 
-## 4.1 异步I/O模型
+![image-20230219105157056](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230219105157056.png)
 
-进行等待返回，同步，否则异步
+## 4.1 同步I/O模型
 
-### 4.1.1同步和异步
+### 4.1.1 同步和异步
 
-等待数据准备好这段时间
+关注的是消息通信机制（调用者视角）
 
-调用立刻返回数据/错误，然后轮询，非阻塞
+同步：发出一个调用，在没有得到结果之前不返回
+
+异步：发出一个调用，在没有得到结果之前返回
+
+### 4.1.2 阻塞和非阻塞
+
+关注的是程序等待调用结果的状态 （被调用者的视角）
+
+阻塞：在调用结果返回之前，线程被挂起
+
+非阻塞：在调用结果之前，线程不会被挂起
+
+阻塞和系统调用有关
+
+### 4.1.3 同步阻塞
+
+数据输入阶段可以分为两段：数据准备和数据拷贝（数据从网卡接收，应用程序想从内核中读取数据（通过系统系统调用看数据有没有准备好））
+
+等待数据准备好的阶段：可以是阻塞的和非阻塞的（轮询数据是否准备好）
+
+数据拷贝阶段：把数据从内核缓冲区拷贝至应用程序缓冲区（用户态缓冲区），同步I/O下永远阻塞
 
 现在常用的是IO多路复用：同步：数据等待和数据拷贝，第二阶段永远阻塞。多路复用也是一种同步IO模型。实现一个线程监视多个文件句柄
 
+### 4.1.4 同步I/O 和异步I/O之别
+
+异步I/O模型会把数据的准备和拷贝过程看作一个整体，整个过程都由内核来完成，不存在阻塞和非阻塞之说，它关注什么时候完成
+
+### 4.1.5 I/O 多路复用
+
+它是一种不同I/O模型，实现一个线程可以监视多个文件句柄
+
+支持I/O多路复用的系统调用有select/pselect/poll/epoll。本质都是同步I/O，因为数据拷贝都是阻塞的，通过select/epoll来判断数据是否准备好，即判断可读可写状态
+
+## 4.2 异步I/O模型
+
+Rust编程模型下的异步包括同步I/O（应用进程不参与数据的拷贝，拷贝工作由内核完成）和异步I/O（特指linux）
+
+异步非阻塞框架都是基于epoll
+
+实际上就是一个I/O多路复用，但是可以设置为非阻塞，即在数据准备阶段可以是非阻塞的
+
 ## 4.2 epoll 和 io_uring
 
-epoll: 是一个同步的多路复用，实际上是一种事件通知机制：三个函数。两种触发机制。惊群问题已经解决
+### 4.2.1 epoll
 
-io_uring：用户态和核心共享两个环形内存
+是一个同步的多路复用，实际上是一种事件通知机制，具体包括：
+
+三个函数: 
+
+1. epoll_create, 内核产生一个epoll实例数据结构，并返回一个epfd
+2. epoll_ctl:将被监听的描述符添加到红黑树或者从红黑树中删除或者对监听事件进行修改（epoll_ctl内部（内核缓存区）提供的红黑树可以支持百万并发连接，添加删除非常快，可以用它来管理socket）
+3. epoll_wait:阻塞等待注册的事件发生，返回事件的数目，并将触发事件的数目写到events数组之中（通过双向链表）
+
+两种触发机制：
+
+1. 水平触发机制：缓冲区只要有数据就触发读写，epoll默认工作方式。select/poll只支持该方式
+2. 边缘触发机制：缓冲区空或者满的状态才触发读写，nginx使用该方式，避免频繁重复读写
+
+如何解决惊群问题：
+
+当多个进程/线程调用epoll_wait时会阻塞等待，当内核触发可读写事件，所有进程/线程都会响应，但实际上只有一个进程才处理这些事件。Liux4.5 通过引入EPOLLEXCLUSIVE标识来保证一个事件发生时只有一个线程会被唤醒，以避免惊群问题
+
+### 4.2.2 io_uring
+
+io_uring是真正的异步I/O模型
+
+原理：用户态和内核共享两个环形缓存区，一个是提交队列，另外一个是完成队列。省了系统调用。已经实现了零拷贝，两个阶段都是异步（无阻塞状态，进程发起数据准备调用后就可以做其他事情，直到数据准备好）。rust也支持，但是用的最多的还是epoll
 
 ## 4.3 事件驱动编程模型
 
 处理IO复用的编程模型相当复杂，为了简化编程，提出了反应器模式和主动器模式
+
+Reactor模式：应对同步I/O，被动的事件分离和分发模型。服务等待请求事件的到来，再通过不受阶段的同步处理事件，从而做出反应
+
+Preactor模式：对应异步I/O，主动的事件分离和分发模型。允许多个任务并发执行，吞吐量很高；并可执行耗时长的任务（任务间不受影响）
+
+三种实现方式
+
+1. 单线程模式：accept()、read()、write()以及connect()都在同一线程
+
+2. 工作者线程池模式：非I/O操作就交给线程池处理
+
+3. 多线程模式：主Reactor（master）负责网络监听，子Reactor（worker）读写网络数据
+
+读写操作流程
+
+1. 应用注册读写就绪事件和相关联的事件处理器
+2. 事件分离器等待事件发生
+3. 当发生读写就绪事件，事件分离器调用已注册的事件处理器
+4. 事件处理器执行读写操作
+
+参与者
+
+1. 描述符：操作系统提供的资源，识别socket等
+2. 同步事件多路分离器：开启事件循环，等待事件发生，封装了多路复用函数select/poll/epoll等
+3. 事件处理器，提供了回调函数，用于描述与应用程序相关的某个事件的操作
+4. 具体的事件处理器，事件处理器接口的具体实现，使用描述符来识别事件和程序提供的服务
+5.  Reactor管理器，事件处理器的调度核心，分离每个事件，调度事件管理器，调用具体的函数处理某个事件
 
 ## 4.4 epoll代码实践
 
@@ -3373,5 +3459,132 @@ Web框架
 
 数据库
 
+```
+// 1. 引入插件探测器
+import detectEthereumProvider from '@metamask/detect-provider';
 
 
+
+const wallet_provider: any = await detectEthereumProvider({
+  mustBeMetaMask: true,
+});
+
+const current_account = await wallet_provider.request({
+  method: 'eth_requestAccounts',
+});
+
+const contract_provider = new Web3(wallet_provider);
+
+const contract_3525 = new contract_provider.eth.Contract(SFTs_ABI, SFTS_Address);
+const contract_721 = new contract_provider.eth.Contract(NFTS_ABI, NFTS_Address);
+const pbarter_protocol = new contract_provider.eth.Contract(PBP_ABI, PBP_Address);
+
+// 1. mint 3525
+const mint_3525 = async (address: string, slot: number, amount: number) => {
+  // 执行合约交易
+  try {
+    await contract_3525.methods
+      .mint(address, slot, amount)
+      .send({
+        from: current_account[0],
+      })
+      .then(function (receipt: any) {
+        console.log('mint 3525 receipt:', receipt);
+        if (receipt.status) {
+          window.confirm('mint 3525 success!');
+        }
+      });
+  } catch (err: any) {
+    // setError(err.message);
+    console.log('mint 3525 failed:', err);
+  }
+};
+
+// mint_3525(current_account[0], 10, 1000);
+
+// 2. 批准3525
+const approve_3525 = async (address: any, token_id: any) => {
+  // 执行合约交易
+  try {
+    await contract_3525.methods
+      .approve(address, token_id)
+      .send({
+        from: current_account[0],
+      })
+      .then(function (receipt: any) {
+        console.log('approve receipt:', receipt);
+        if (receipt.status) {
+          window.confirm('approve success!');
+        }
+      });
+  } catch (err: any) {
+    // setError(err.message);
+    console.log('approve failed:', err);
+  }
+};
+
+// approve();
+
+// 1. mint 721
+const mint_721 = async (address: string, url: string) => {
+  // 执行合约交易
+  try {
+    await contract_721.methods
+      .safeMint(address, url)
+      .send({
+        from: current_account[0],
+      })
+      .then(function (receipt: any) {
+        console.log('mint 721 receipt:', receipt);
+        if (receipt.status) {
+          window.confirm('mint 721 success!');
+        }
+      });
+  } catch (err: any) {
+    // setError(err.message);
+    console.log('mint 721 failed:', err);
+  }
+};
+
+const url = 'www.liyunfei.blog.com';
+
+// mint_721(current_account[0], url);
+
+// 2 approve 721
+const approve_721 = async (address: any, token_id: any) => {
+  // 执行合约交易
+  try {
+    await contract_721.methods
+      .approve(address, token_id)
+      .send({
+        from: current_account[0],
+      })
+      .then(function (receipt: any) {
+        console.log('approve 721 receipt:', receipt);
+        if (receipt.status) {
+          window.confirm('approve 721 success!');
+        }
+      });
+  } catch (err: any) {
+    // setError(err.message);
+    console.log('approve 721 failed:', err);
+  }
+};
+
+```
+
+```
+
+
+```
+
+
+
+1. 列表名称
+2. 创建订单页面
+
+![image-20230216165051779](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230216165051779.png)
+
+3. NFT Details
+4. Create orders位置
+5. 整体的布局
