@@ -2,6 +2,8 @@
 
 Rust语言其他方面无需多言，只要强调一点就是它的目标：性能、安全以及实用
 
+Rust 采百家之长，从 C++ 学习并强化了 move 语义和 RAII，从 Cyclone 借鉴和发展了生命周期，从 Haskell 吸收了函数式编程和类型系统等
+
 ## 1.1 内存安全方案
 
 ### 1.1.1 Rust针对C语言的不足
@@ -22,6 +24,14 @@ Rust语言其他方面无需多言，只要强调一点就是它的目标：性�
 通过C-ABI零成本和C语言打交道
 
 划分了Safe Rust和Unsafe Rust
+
+## 1.2 Rust应用场景
+
+![img](https://static001.geekbang.org/resource/image/7c/19/7c2bafba5faaa77f8b2778fe16a44019.jpg?wh=2364x1408)
+
+## 1.3 通用内存安全解决方案
+
+![img](https://static001.geekbang.org/resource/image/b3/1e/b3888e6082a613d3da04658089dc361e.jpg?wh=1920x1503)
 
 # 2 Rust语言基础
 
@@ -609,6 +619,8 @@ NonNull指针：替代*mut T，非空，并遵循生命周期类型协变规则
 2. 拥有生命周期
 
 3. 受借用检查器保护，不会发生悬垂指针等问题
+
+4. 访问受限，只能解引用到它引用的数据类型，不能用做它用
 
 8 元组
 
@@ -1833,6 +1845,8 @@ cargo expand 展开宏
 
 # 3 Rust语言核心
 
+![image-20230220185830856](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230220185830856.png)
+
 ## 3.1 Rust语言架构
 
 1. 安全抽象和范式抽象
@@ -1848,6 +1862,8 @@ cargo expand 展开宏
 ![image-20230205094157609](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205094157609.png)
 
 ### 3.1.2 函数调用栈
+
+避免栈溢出
 
 ![image-20230205094254609](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205094254609.png)   
 
@@ -2110,8 +2126,13 @@ Copy本质上是按位复制，并且不可以被重载，clone隐式调用，�
 
 ### 3.3.3 内存管理
 
-1. 数据默认存储到栈上
-2. 利用栈来自动管理堆内存（结合函数调用栈来理解，当栈针被清除时，自动调用析构函数Drop，堆上的数据也被清空）
+以“hello world” 串常量（string literal）为例，在编译时被存入可执行文件的 .RODATA 段（GCC）或者 .RDATA 段（VC++），然后在程序加载时，获得一个固定的内存地址。
+
+![img](https://static001.geekbang.org/resource/image/a7/4c/a7e7f2334460f15f9afd04ebd710b54c.jpg?wh=2312x2043)
+
+1. 数据默认存储到栈上，堆上内存分配使用libc提供的malloc函数，其内部会请求操作系统的调用来分配内存，系统调用的代价是昂贵，需要尽可能避免频繁的使用malloc()
+2. 利用栈来自动管理堆内存（结合函数调用栈来理解，当栈针被清除时，自动调用析构函数Drop，堆上的数据也被清空）shulu
+3. 除了动态大小的内存需要分配到堆上外，动态生命周期的内存要分配在堆上（在不同调用栈之间共享数据）。带来的问题：堆内存泄漏和越界、悬垂指针，分别是1.2大内存安全问题
 
 Box<T>也叫做装箱类型，栈上会保留指针
 
@@ -2147,6 +2168,8 @@ Rc<T>和Arc<T>引用计数的容器：可以共享所有权，强指针有所有
 
 
 ## 3.4 线程安全：线程和并发
+
+很多拥有高并发处理能力的编程语言，会在用户程序中嵌入一个 M:N 的调度器，把 M 个并发任务，合理地分配在 N 个 CPU core 上并行运行，让程序的吞吐量达到最大。
 
 ### 3.4.1 本地线程
 
@@ -2523,6 +2546,8 @@ use core::any::{Any, TypeId};
 
 #### 3.5.2.2 trait对象的本质
 
+在运行时，一旦使用了关于接口的引用，变量原本的类型被抹去，我们无法单纯从一个指针分析出这个引用具备什么样的能力。因此，在生成这个引用的时候，我们需要构建胖指针，除了指向数据本身外，还需要指向一张涵盖了这个接口所支持方法的列表。这个列表，就是我们熟知的虚表（virtual table）。
+
  trait定义了共同的行为
 
 vtable存的是函数指针集
@@ -2530,6 +2555,8 @@ vtable存的是函数指针集
 trait 对象本质上是一个虚表
 
 ![image-20230207173955183](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230207173955183.png)
+
+![img](https://static001.geekbang.org/resource/image/27/f9/27f671936d44d08d837fbf68baee21f9.jpg?wh=1920x1409)
 
 #### 3.5.2.3 trait 对象安全的本质
 
@@ -3342,7 +3369,7 @@ io_source 实现了Source trait
 
 ### 4.8.5 Future
 
-Future代表一个异步计算，就像Option一样
+Future代表一个异步计算，就像Option一样。在很多支持异步的语言中，Promise 也叫 Future / Delay / Deferred 等。
 
 ```
 pub trait Future {
@@ -3372,6 +3399,8 @@ pub trait Wake {
 ```
 
 Future以及上述trait还有async和await是rust提供的最小化的定义，用于异步编程。future-rs实现了更完整的异步运行时
+
+async 定义了一个可以并发执行的任务，而 await 则触发这个任务并发执行。大多数语言中，async/await 是一个语法糖（syntactic sugar），它使用状态机将 Promise 包装起来，让异步调用的使用感觉和同步调用非常类似，也让代码更容易阅读
 
 ### 4.8.2 编写异步echo服务
 
