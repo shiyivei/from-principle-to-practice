@@ -3576,132 +3576,18 @@ Web框架
 
 数据库
 
-```
-// 1. 引入插件探测器
-import detectEthereumProvider from '@metamask/detect-provider';
+# 7 常用crates
 
-
-
-const wallet_provider: any = await detectEthereumProvider({
-  mustBeMetaMask: true,
-});
-
-const current_account = await wallet_provider.request({
-  method: 'eth_requestAccounts',
-});
-
-const contract_provider = new Web3(wallet_provider);
-
-const contract_3525 = new contract_provider.eth.Contract(SFTs_ABI, SFTS_Address);
-const contract_721 = new contract_provider.eth.Contract(NFTS_ABI, NFTS_Address);
-const pbarter_protocol = new contract_provider.eth.Contract(PBP_ABI, PBP_Address);
-
-// 1. mint 3525
-const mint_3525 = async (address: string, slot: number, amount: number) => {
-  // 执行合约交易
-  try {
-    await contract_3525.methods
-      .mint(address, slot, amount)
-      .send({
-        from: current_account[0],
-      })
-      .then(function (receipt: any) {
-        console.log('mint 3525 receipt:', receipt);
-        if (receipt.status) {
-          window.confirm('mint 3525 success!');
-        }
-      });
-  } catch (err: any) {
-    // setError(err.message);
-    console.log('mint 3525 failed:', err);
-  }
-};
-
-// mint_3525(current_account[0], 10, 1000);
-
-// 2. 批准3525
-const approve_3525 = async (address: any, token_id: any) => {
-  // 执行合约交易
-  try {
-    await contract_3525.methods
-      .approve(address, token_id)
-      .send({
-        from: current_account[0],
-      })
-      .then(function (receipt: any) {
-        console.log('approve receipt:', receipt);
-        if (receipt.status) {
-          window.confirm('approve success!');
-        }
-      });
-  } catch (err: any) {
-    // setError(err.message);
-    console.log('approve failed:', err);
-  }
-};
-
-// approve();
-
-// 1. mint 721
-const mint_721 = async (address: string, url: string) => {
-  // 执行合约交易
-  try {
-    await contract_721.methods
-      .safeMint(address, url)
-      .send({
-        from: current_account[0],
-      })
-      .then(function (receipt: any) {
-        console.log('mint 721 receipt:', receipt);
-        if (receipt.status) {
-          window.confirm('mint 721 success!');
-        }
-      });
-  } catch (err: any) {
-    // setError(err.message);
-    console.log('mint 721 failed:', err);
-  }
-};
-
-const url = 'www.liyunfei.blog.com';
-
-// mint_721(current_account[0], url);
-
-// 2 approve 721
-const approve_721 = async (address: any, token_id: any) => {
-  // 执行合约交易
-  try {
-    await contract_721.methods
-      .approve(address, token_id)
-      .send({
-        from: current_account[0],
-      })
-      .then(function (receipt: any) {
-        console.log('approve 721 receipt:', receipt);
-        if (receipt.status) {
-          window.confirm('approve 721 success!');
-        }
-      });
-  } catch (err: any) {
-    // setError(err.message);
-    console.log('approve 721 failed:', err);
-  }
-};
+## 7.1 标准库
 
 ```
-
+std::fs; // 处理文件
 ```
 
+## 7.2 第三方库
 
 ```
+html2md = "0.2.14" // 将文本转换为markdown
+reqwest = {version ="0.11.14",features = ["blocking"]} // 一个http客户端，类似于python中的request
+```
 
-
-
-1. 列表名称
-2. 创建订单页面
-
-![image-20230216165051779](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230216165051779.png)
-
-3. NFT Details
-4. Create orders位置
-5. 整体的布局

@@ -1,0 +1,8 @@
+/Users/qinjianquan/Career/rust/from-principle-to-practice/src/html-to-md/target/debug/deps/futures_task-5ed565d8761b0e08.rmeta: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/spawn.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/future_obj.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/noop_waker.rs
+
+/Users/qinjianquan/Career/rust/from-principle-to-practice/src/html-to-md/target/debug/deps/futures_task-5ed565d8761b0e08.d: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/spawn.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/future_obj.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/noop_waker.rs
+
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/lib.rs:
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/spawn.rs:
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/future_obj.rs:
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/futures-task-0.3.26/src/noop_waker.rs:
