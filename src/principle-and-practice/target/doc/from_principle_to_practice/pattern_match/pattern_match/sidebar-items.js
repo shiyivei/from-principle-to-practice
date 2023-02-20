@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["pattern_match","模式匹配的位置"]]};

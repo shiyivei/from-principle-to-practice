@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["smart_pointer","Deref trait"]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["copy_and_copy_trait","1 copy 和 Copy trait"],["move_and_drop_trait","2 move 和 Drop trait"]]};

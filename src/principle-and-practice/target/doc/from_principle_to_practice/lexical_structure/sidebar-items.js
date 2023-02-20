@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["entry","词法结构: 词条"],["identifier","词法结构: 标识符"],["note","词法结构: 注释"],["path","词法结构: 路径"]]};

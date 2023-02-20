@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["main","词条通常是宏的“类型”,用于编写各种宏代码"]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["identifier","标识符以字母或着下划线开头"]]};

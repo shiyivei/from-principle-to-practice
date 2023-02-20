@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["pattern_match","模式匹配"]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["closure","闭包与函数及闭包实现原理"]]};

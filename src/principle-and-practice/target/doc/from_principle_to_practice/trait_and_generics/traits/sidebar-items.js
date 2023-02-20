@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["traits","trait 的几种用途"]]};
