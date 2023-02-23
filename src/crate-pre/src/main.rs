@@ -18,5 +18,18 @@ impl<T, U> Container<T, U> {
 fn main() {
     // 我们知道结构体的第二个字段是u32，但是它的值是多少我们并不在意
     let _container: Container<i32, u32> = Container::new(42);
-    println!("{:?}", _container)
+    println!("{:?}", _container);
+
+    let ref mut your = 100u64;
+
+    {
+        let me = your;
+        println!("{:?}", me);
+
+        *me = *me + 30u64;
+
+        let a = 100u32;
+    }
+
+    // println!("{:?}", your);
 }

@@ -3597,6 +3597,12 @@ std::fs; // 处理文件
 ```
 html2md = "0.2.14" // 将文本转换为markdown
 reqwest = {version ="0.11.14",features = ["blocking"]} // 一个http客户端，类似于python中的request
-clap // 命令行
+reqwest = {version ="0.11.14", features =["json"] }
+anyhow = "1.0.69" # 错误处理
+clap = "4.1.6" # 命令行解析库
+colored = "2.0.0" #命令终端多色彩显示
+jsonxf = "1.1.1" # JSON pretty print 格式化
+mime = "0.3.16" # 处理mime类型
+tokio = "1.25.0" # 异步处理库
 ```
 
