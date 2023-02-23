@@ -41,7 +41,7 @@ struct Get {
 
 #[derive(Debug, Parser)]
 struct Post {
-    // 不再通过属性宏的方式指定工具函数
+    // 不再通过属性宏的方式指定工具函数,自动选择
     // #[clap(parse(try_from_str = parse_url))]
     url: String,
     // 不再通过属性宏的方式指定工具函数
