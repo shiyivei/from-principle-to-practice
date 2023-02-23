@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package type;
+
+// 定义结构体
+message Student {
+     string name = 1;
+     uint32 age = 2;
+     bool is_male = 3;
+}
+
+// 定义枚举
+
+enum Subject {
+
+     MATH = 0;
+     ENGLISH = 1;
+     CHINESE = 2;
+     PHYSICAL = 3;
+     CHEMICAL = 4;
+}
+
+// 定义数组
+
+message Msg {
+     repeated string names = 1;
+   }
+
+// 嵌套
+
+message SearchResponse {
+     // 嵌套消息定义
+     message Result {
+       string url = 1;
+       string title = 2;
+       repeated string snippets = 3;
+     }
+     // 引用嵌套的消息定义
+     repeated Result results = 1;
+   }
+
+// map
+
+message Product
+{
+    string name = 1; // 商品名
+    // 定义一个k/v类型，key是string类型，value也是string类型
+    map<string, string> attrs = 2; // 商品属性，键值对
+}
+
+// 模块与类型
+
+message Type {
+
+     enum Color{
+          WHITE = 0;
+          ORANGE = 1;
+          GREEN = 2;
+     }
+
+     Color color = 1;
+
+     message Point {
+          uint32 x = 1;
+          uint32 y = 2;
+          uint32 z = 3;
+     }
+
+     Point point = 2;
+
+     message Points {
+          repeated Point points = 1;
+     }
+
+     Points points = 3;
+}
