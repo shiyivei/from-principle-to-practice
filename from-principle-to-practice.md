@@ -3604,5 +3604,25 @@ colored = "2.0.0" #命令终端多色彩显示
 jsonxf = "1.1.1" # JSON pretty print 格式化
 mime = "0.3.16" # 处理mime类型
 tokio = "1.25.0" # 异步处理库
+tokio = { version = "1.25.0", features = ["full"] } # 异步处理
+axum = "0.6.7" # web服务器
+base64 = "0.21.0" # 编解码
+bytes = "1.4.0" # 处理字节流
+image = "0.24.5" # 处理图片
+lazy_static = "1.4.0" # 通过宏更方便的初始化静态变量
+lru = "0.9.0" # LRU 缓存
+percent-encoding = "2.2.0" # url 编码解码
+photon-rs = "0.3.2" # 图片效果
+prost = "0.11.6" # protobuf 处理
+serde = { version = "1.0.152", features = ["derive"] } # 序列化和反序列化数据
+tower = { version = "0.4.13", features = ["util", "timeout", "load-shed", "limit"] } # 服务处理中间件
+tower-http = { version = "0.3.5", features = ["add-extension", "compression-full"] } # http中间件
+tracing = "0.1.37" # 日志和追踪
+tracing-subscriber = "0.3.16" # 日志和追踪
+```
+
+```
+[build-dependencies]
+prost-build = "0.11.6" # 编译 protobuf	
 ```
 

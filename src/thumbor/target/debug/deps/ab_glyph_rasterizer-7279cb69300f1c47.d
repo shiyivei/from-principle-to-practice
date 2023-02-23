@@ -1,0 +1,9 @@
+/Users/qinjianquan/Career/rust-updating/from-principle-to-practice/src/thumbor/target/debug/deps/ab_glyph_rasterizer-7279cb69300f1c47.rmeta: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/geometry.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/raster.rs
+
+/Users/qinjianquan/Career/rust-updating/from-principle-to-practice/src/thumbor/target/debug/deps/libab_glyph_rasterizer-7279cb69300f1c47.rlib: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/geometry.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/raster.rs
+
+/Users/qinjianquan/Career/rust-updating/from-principle-to-practice/src/thumbor/target/debug/deps/ab_glyph_rasterizer-7279cb69300f1c47.d: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/geometry.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/raster.rs
+
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/lib.rs:
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/geometry.rs:
+/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/ab_glyph_rasterizer-0.1.8/src/raster.rs:
