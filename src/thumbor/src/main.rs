@@ -25,8 +25,12 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{info, instrument};
 
+mod engine;
 mod pb;
 use pb::*;
+
+use engine::{Engine, Photon};
+use image::ImageOutputFormat;
 
 #[derive(Deserialize)]
 struct Params {
@@ -42,7 +46,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     // 引入缓存
-    let cache: Cache = Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(10).unwrap())));
+    let cache: Cache = Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())));
 
     // 构建路由
     let app = Router::new()
@@ -72,20 +76,30 @@ async fn generate(
     Path(Params { spec, url }): Path<Params>,
     Extension(cache): Extension<Cache>,
 ) -> Result<(HeaderMap, Vec<u8>), StatusCode> {
-    let _spec: ImageSpec = spec
+    let spec: ImageSpec = spec
         .as_str()
         .try_into()
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let url = &percent_decode_str(&url).decode_utf8_lossy();
+    let url: &str = &percent_decode_str(&url).decode_utf8_lossy();
 
     let data = retrieve_image(&url, cache)
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    let mut engine: Photon = data
+        .try_into()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    engine.apply(&spec.specs);
+
+    let image = engine.generate(ImageOutputFormat::Jpeg(85));
+
+    info!("Finished processing: image size {}", image.len());
     let mut headers = HeaderMap::new();
-    headers.insert("Content-Type", HeaderValue::from_static("image/jpeg"));
-    Ok((headers, data.to_vec()))
+    headers.insert("content-type", HeaderValue::from_static("image/jpeg"));
+
+    Ok((headers, image))
 }
 
 #[instrument(level = "info", skip(cache))]
@@ -105,13 +119,18 @@ async fn retrieve_image(url: &str, cache: Cache) -> Result<Bytes> {
         None => {
             info!("Retrieve url");
             let resp = reqwest::get(url).await?;
+
             let data = resp.bytes().await?;
+            g.put(key, data.clone());
+
             data
         }
     };
 
     Ok(data)
 }
+
+// 测试案例
 
 fn print_test_url(url: &str) {
     use std::borrow::Borrow;

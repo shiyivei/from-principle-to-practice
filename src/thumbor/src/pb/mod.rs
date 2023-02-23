@@ -72,13 +72,13 @@ impl Spec {
         }
     }
 
-    pub fn new_resize(width: u32, height: u32, _: resize::SampleFilter) -> Self {
+    pub fn new_resize(width: u32, height: u32, filter: resize::SampleFilter) -> Self {
         Self {
             data: Some(spec::Data::Resize(Resize {
                 width,
                 height,
-                rtype: resize::ResizeType::SeamCarve as i32,
-                filter: resize::SampleFilter::Undefined as i32,
+                rtype: resize::ResizeType::Normal as i32,
+                filter: filter as i32,
             })),
         }
     }
