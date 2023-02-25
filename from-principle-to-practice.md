@@ -809,7 +809,222 @@ fn main() {
 
 #### 2.6.3.3 容器类型
 
+![img](https://static001.geekbang.org/resource/image/d9/4c/d9c1d7ce878b5ef17eb1c8c69e17404c.jpg?wh=2364x1718)
+
 ![image-20230203113058709](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203113058709.png)
+
+**切片** 
+
+三种形式，切片之于具体的数据结构，就像数据库中的视图于表，可以把它看成一种工具，让我们可以统一访问行为相同、结构类似但有些许差异的类型
+
+```
+&[T]：表示一个只读的切片引用
+&mut [T]：表示一个可写的切片引用
+Box<[T]>：一个在堆上分配的切片。
+```
+
+```
+fn main() {
+    let arr = [1, 2, 3, 4, 5];
+    let vec = vec![1, 2, 3, 4, 5];
+    let s1 = &arr[..2];
+    let s2 = &vec[..2];
+    println!("s1: {:?}, s2: {:?}", s1, s2);
+
+    // &[T] 和 &[T] 是否相等取决于长度和内容是否相等
+    assert_eq!(s1, s2);
+    // &[T] 可以和 Vec<T>/[T;n] 比较，也会看长度和内容
+    assert_eq!(&arr[..], vec);
+    assert_eq!(&vec[..], arr);
+}
+```
+
+array 和 vector，虽然是不同的数据结构，一个放在栈上，一个放在堆上，但它们的切片是类似的；而且对于相同内容数据的相同切片，比如 &arr[1…3] 和 &vec[1…3]，这两者是等价的，并且切片和对应的数据结构可以直接比较，它们之间实现了 PartialEq trait
+
+![img](https://static001.geekbang.org/resource/image/91/b7/91b4f63c619bf35cf2e5fc22c6d486b7.jpg?wh=2364x1422)
+
+支持切片的具体数据类型，可以根据需要，解引用转换为切片类型。比如Vec<T> 和 [T;n] 会转化为 &[T].这是因为 Vec 实现了 Deref trait，而 array 内建了到 &[T] 的解引用
+
+```
+
+use std::fmt;
+fn main() {
+    let v = vec![1, 2, 3, 4];
+
+    // Vec 实现了 Deref，&Vec<T> 会被自动解引用为 &[T]，符合接口定义
+    print_slice(&v);
+    // 直接是 &[T]，符合接口定义
+    print_slice(&v[..]);
+
+    // &Vec<T> 支持 AsRef<[T]>
+    print_slice1(&v);
+    // &[T] 支持 AsRef<[T]>
+    print_slice1(&v[..]);
+    // Vec<T> 也支持 AsRef<[T]>
+    print_slice1(v);
+
+    let arr = [1, 2, 3, 4];
+    // 数组虽没有实现 Deref，但它的解引用就是 &[T]
+    print_slice(&arr);
+    print_slice(&arr[..]);
+    print_slice1(&arr);
+    print_slice1(&arr[..]);
+    print_slice1(arr);
+}
+
+// 注意下面的泛型函数的使用
+fn print_slice<T: fmt::Debug>(s: &[T]) {
+    println!("{:?}", s);
+}
+
+fn print_slice1<T, U>(s: T)
+where
+    T: AsRef<[U]>,
+    U: fmt::Debug,
+{
+    println!("{:?}", s.as_ref());
+}
+```
+
+通过解引用，这几个和切片有关的数据结构都会获得切片的所有能力，包括：binary_search、chunks、concat、contains、start_with、end_with、group_by、iter、join、sort、split、swap 等一系列丰富的功能
+
+**切片和迭代器 Iterator**
+
+迭代器可以说是切片的孪生兄弟。切片是集合数据的视图，而迭代器定义了对集合数据的各种各样的访问操作
+
+通过切片的 iter() 方法，我们可以生成一个迭代器，对切片进行迭代
+
+看一个例子：对 Vec 使用 iter() 方法，并进行各种 map / filter / take 操作
+
+```
+fn main() {
+    // 这里 Vec<T> 在调用 iter() 时被解引用成 &[T]，所以可以访问 iter()
+    let result = vec![1, 2, 3, 4]
+        .iter()
+        .map(|v| v * v)
+        .filter(|v| *v < 16)
+        .take(1)
+        .collect::<Vec<_>>();
+
+    println!("{:?}", result);
+}
+```
+
+Iterator 大部分方法都返回一个实现了 Iterator 的数据结构，所以可以这样一路链式下去，在 Rust 标准库中，这些数据结构被称为 Iterator Adapter。
+
+```
+在 collect() 执行的时候，它实际试图使用 FromIterator 从迭代器中构建一个集合类型，这会不断调用 next() 获取下一个数据；
+此时的 Iterator 是 Take，Take 调自己的 next()，也就是它会调用 Filter 的 next()；
+Filter 的 next() 实际上调用自己内部的 iter 的 find()，此时内部的 iter 是 Map，find() 会使用 try_fold()，它会继续调用 next()，也就是 Map 的 next()；
+Map 的 next() 会调用其内部的 iter 取 next() 然后执行 map 函数。而此时内部的 iter 来自 Vec。
+```
+
+特殊的切片 &str，String是一个特殊的Vec<u8>,在其之上做切片也是&str
+
+![img](https://static001.geekbang.org/resource/image/ea/0a/ea816d6fbdd1d14b00bb6ea6c7ef3a0a.jpg?wh=2364x1422)
+
+String 在解引用时会转换成&str
+
+**字符列表和字符串的区别** ：
+
+```
+
+use std::iter::FromIterator;
+
+fn main() {
+    let arr = ['h', 'e', 'l', 'l', 'o'];
+    let vec = vec!['h', 'e', 'l', 'l', 'o'];
+    let s = String::from("hello");
+    let s1 = &arr[1..3];
+    let s2 = &vec[1..3];
+    // &str 本身就是一个特殊的 slice
+    let s3 = &s[1..3];
+    println!("s1: {:?}, s2: {:?}, s3: {:?}", s1, s2, s3);
+
+    // &[char] 和 &[char] 是否相等取决于长度和内容是否相等
+    assert_eq!(s1, s2);
+    // &[char] 和 &str 不能直接对比，我们把 s3 变成 Vec<char>
+    assert_eq!(s2, s3.chars().collect::<Vec<_>>());
+    // &[char] 可以通过迭代器转换成 String，String 和 &str 可以直接对比
+    assert_eq!(String::from_iter(s2), s3);
+}
+```
+
+![img](https://static001.geekbang.org/resource/image/e0/93/e05210d20yy4d20bf54e670e958a7a93.jpg?wh=2364x1422)
+
+Box<[T]> 和切片的引用 &[T] 也很类似：它们都是在栈上有一个包含长度的胖指针，指向存储数据的内存位置。区别是：Box<[T]> 只会指向堆，&[T] 指向的位置可以是栈也可以是堆；此外，Box<[T]> 对数据具有所有权，而 &[T] 只是一个借用
+
+![img](https://static001.geekbang.org/resource/image/a1/eb/a12b61b5e70a9a4625c071576f0717eb.jpg?wh=2364x1532)
+
+```
+
+use std::ops::Deref;
+
+fn main() {
+    let mut v1 = vec![1, 2, 3, 4];
+    v1.push(5);
+    println!("cap should be 8: {}", v1.capacity());
+
+    // 从 Vec<T> 转换成 Box<[T]>，此时会丢弃多余的 capacity
+    let b1 = v1.into_boxed_slice();
+    let mut b2 = b1.clone();
+
+    let v2 = b1.into_vec();
+    println!("cap should be exactly 5: {}", v2.capacity());
+
+    assert!(b2.deref() == v2);
+
+    // Box<[T]> 可以更改其内部数据，但无法 push
+    b2[0] = 2;
+    // b2.push(6);
+    println!("b2: {:?}", b2);
+
+    // 注意 Box<[T]> 和 Box<[T; n]> 并不相同
+    let b3 = Box::new([2, 2, 3, 4, 5]);
+    println!("b3: {:?}", b3);
+
+    // b2 和 b3 相等，但 b3.deref() 和 v2 无法比较
+    assert!(b2 == b3);
+    // assert!(b3.deref() == v2);
+}
+```
+
+Vec 可以通过 into_boxed_slice() 转换成 Box<[T]>，Box<[T]> 也可以通过 into_vec() 转换回 Vec
+
+```
+
+use std::ops::Deref;
+
+fn main() {
+    let mut v1 = vec![1, 2, 3, 4];
+    v1.push(5);
+    println!("cap should be 8: {}", v1.capacity());
+
+    // 从 Vec<T> 转换成 Box<[T]>，此时会丢弃多余的 capacity
+    let b1 = v1.into_boxed_slice();
+    let mut b2 = b1.clone();
+
+    let v2 = b1.into_vec();
+    println!("cap should be exactly 5: {}", v2.capacity());
+
+    assert!(b2.deref() == v2);
+
+    // Box<[T]> 可以更改其内部数据，但无法 push
+    b2[0] = 2;
+    // b2.push(6);
+    println!("b2: {:?}", b2);
+
+    // 注意 Box<[T]> 和 Box<[T; n]> 并不相同
+    let b3 = Box::new([2, 2, 3, 4, 5]);
+    println!("b3: {:?}", b3);
+
+    // b2 和 b3 相等，但 b3.deref() 和 v2 无法比较
+    assert!(b2 == b3);
+    // assert!(b3.deref() == v2);
+}
+```
+
+所以，当我们需要在堆上创建固定大小的集合数据，且不希望自动增长，那么，可以先创建 Vec，再转换成 Box<[T]>
 
 ##### 2.6.3.3.1 **共享容器**
 
@@ -913,11 +1128,179 @@ Rust的内存分配器可以自定义；Vec内部是一个结构体，还介绍�
 
 一般对哈希表的要求，哈希值如何产生，如何避免哈希冲突。Rust哈希算法默认是siphash，可以实现Hasher trait替换哈希算法，如FnvHasher，默认可以抵抗HashDos攻击。如何解决哈希碰撞，现在是Google的SwissTable实现，和C++持平。以前用的是Robinhood，但他们都基于二次探查
 
+哈希表如何解决哈希冲突：链地址法和开放寻址法
+
+链地址法，我们比较熟悉，就是把落在同一个哈希上的数据用单链表或者双链表连接起来。这样在查找的时候，先找到对应的哈希桶（hash bucket），然后再在冲突链上挨个比较
+
+![img](https://static001.geekbang.org/resource/image/a3/5d/a3334e4a3259e0bd231815a486b7c45d.jpg?wh=2364x1610)
+
+缺点是缓存不友好
+
+开放寻址法把整个哈希表看做一个大数组，不引入额外的内存，当冲突产生时，按照一定的规则把数据插入到其它空闲的位置。比如线性探寻（linear probing）在出现哈希冲突时，不断往后探寻，直到找到空闲的位置插入
+
+而二次探查，理论上是在冲突发生时，不断探寻哈希位置加减 n 的二次方，找到空闲的位置插入
+
+![img](https://static001.geekbang.org/resource/image/42/4e/42a18970ac2eec7510c69c1f8323bc4e.jpg?wh=2364x1304)
+
 **枚举在rust中相当于一个接口**
 
 方法：和动态数组差不多，实现trait：Extend，没有实现Drop，因为内部使用了算法hashbrown，实现了drop，涉及数据并行。还需要关注一个设计模式，entry，entry返回一个枚举（占位和空缺两种状态），非常聪明
 
 Rust集合容器为什么没有统一的接口（trait）：缺乏功能泛型关联类型GAT的支持
+
+哈希表的数据结构
+
+```
+use hashbrown::hash_map as base;
+
+#[derive(Clone)]
+pub struct RandomState {
+    k0: u64,
+    k1: u64,
+}
+
+pub struct HashMap<K, V, S = RandomState> {
+    base: base::HashMap<K, V, S>,
+}
+```
+
+HashMap 的基本使用方法
+
+```
+
+use std::collections::HashMap;
+
+fn main() {
+    let mut map = HashMap::new();
+    explain("empty", &map);
+
+    map.insert('a', 1);
+    explain("added 1", &map);
+
+    map.insert('b', 2);
+    map.insert('c', 3);
+    explain("added 3", &map);
+
+    map.insert('d', 4);
+    explain("added 4", &map);
+
+    // get 时需要使用引用，并且也返回引用
+    assert_eq!(map.get(&'a'), Some(&1));
+    assert_eq!(map.get_key_value(&'b'), Some((&'b', &2)));
+
+    map.remove(&'a');
+    // 删除后就找不到了
+    assert_eq!(map.contains_key(&'a'), false);
+    assert_eq!(map.get(&'a'), None);
+    explain("removed", &map);
+    // shrink 后哈希表变小
+    map.shrink_to_fit();
+    explain("shrinked", &map);
+}
+
+fn explain<K, V>(name: &str, map: &HashMap<K, V>) {
+    println!("{}: len: {}, cap: {}", name, map.len(), map.capacity());
+}
+```
+
+当 HashMap::new() 时，它并没有分配空间，容量为零，随着哈希表不断插入数据，它会以 2 的幂减一的方式增长，最小是 3。当删除表中的数据时，原有的表大小不变，只有显式地调用 shrink_to_fit，才会让哈希表变小
+
+内存布局
+
+![img](https://static001.geekbang.org/resource/image/d1/87/d126ceb74605b168d36bc1e83d4c9e87.jpg?wh=2364x1762)
+
+哈希表会按幂扩容
+
+删除一个值，并不需要实际清除内存，只需要将它的 ctrl byte 设回 0xff
+
+**让自定义的数据结构做 Hash key**
+
+```
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+};
+
+// 如果要支持 Hash，可以用 #[derive(Hash)]，前提是每个字段都实现了 Hash
+// 如果要能作为 HashMap 的 key，还需要 PartialEq 和 Eq
+#[derive(Debug, Hash, PartialEq, Eq)]
+struct Student<'a> {
+    name: &'a str,
+    age: u8,
+}
+
+impl<'a> Student<'a> {
+    pub fn new(name: &'a str, age: u8) -> Self {
+        Self { name, age }
+    }
+}
+fn main() {
+    let mut hasher = DefaultHasher::new();
+    let student = Student::new("Tyr", 18);
+    // 实现了 Hash 的数据结构可以直接调用 hash 方法
+    student.hash(&mut hasher);
+    let mut map = HashMap::new();
+    // 实现了 Hash / PartialEq / Eq 的数据结构可以作为 HashMap 的 key
+    map.insert(student, vec!["Math", "Writing"]);
+    println!("hash: 0x{:x}, map: {:?}", hasher.finish(), map);
+}
+```
+
+**HashSet / BTreeMap / BTreeSet**
+
+简单确认元素是否在集合中，使用HashSet，存放无序集合，定义直接是 HashMap<k,()>
+
+```
+use hashbrown::hash_set as base;
+
+pub struct HashSet<T, S = RandomState> {
+    base: base::HashSet<T, S>,
+}
+
+pub struct HashSet<T, S = DefaultHashBuilder, A: Allocator + Clone = Global> {
+    pub(crate) map: HashMap<T, (), S, A>,
+}
+```
+
+BTreeSet存放有序集合
+
+```
+use std::collections::BTreeMap;
+
+fn main() {
+    let map = BTreeMap::new();
+    let mut map = explain("empty", map);
+
+    for i in 0..16usize {
+        map.insert(format!("Tyr {}", i), i);
+    }
+
+    let mut map = explain("added", map);
+
+    map.remove("Tyr 1");
+
+    let map = explain("remove 1", map);
+
+    for item in map.iter() {
+        println!("{:?}", item);
+    }
+}
+
+// BTreeMap 结构有 height，node 和 length
+// 我们 transmute 打印之后，再 transmute 回去
+fn explain<K, V>(name: &str, map: BTreeMap<K, V>) -> BTreeMap<K, V> {
+    let arr: [usize; 3] = unsafe { std::mem::transmute(map) };
+    println!(
+        "{}: height: {}, root node: 0x{:x}, len: 0x{:x}",
+        name, arr[0], arr[1], arr[2]
+    );
+    unsafe { std::mem::transmute(arr) }
+}
+```
+
+如果你想让自定义的数据结构可以作为 BTreeMap 的 key，那么需要实现 PartialOrd 和 Ord，这两者的关系和 PartialEq / Eq 类似，PartialOrd 也没有实现自反性。同样的，PartialOrd 和 Ord 也可以通过派生宏来实现
+
+![img](https://static001.geekbang.org/resource/image/60/2f/60733157bd6e6171a7fee22981469b2f.jpg?wh=2364x1304)
 
 #### 2.6.3.4 泛型
 
@@ -1111,6 +1494,18 @@ Rust类型系统遵循的是仿射类型理论，即系统中用于标识内存�
 
 ## 2.8 函数与闭包
 
+参数为闭包
+
+```
+pub fn spawn<F, T>(f: F) -> JoinHandle<T> 
+where
+    F: FnOnce() -> T,
+    F: Send + 'static,
+    T: Send + 'static,
+```
+
+F: FnOnce() → T，表明 F 是一个接受 0 个参数、返回 T 的闭包。FnOnce 我们稍后再说。F: Send + 'static，说明闭包 F 这个数据结构，需要静态生命周期或者拥有所有权，并且它还能被发送给另一个线程。T: Send + 'static，说明闭包 F 返回的数据结构 T，需要静态生命周期或者拥有所有权，并且它还能被发送给另一个线程
+
 ### 2.8.1 函数与函数项
 
 #### 2.8.1.1 函数
@@ -1238,6 +1633,8 @@ println!("the size of fn pointer {:?}", std::mem::size_of_val(&c)); // 8
 2. 闭包可以与函数指针互通
 3. 闭包在作为函数返回值时要使用impl trait语法
 4. 闭包可以捕获环境变量
+5. 闭包的大小跟参数、局部变量都无关，只跟捕获的变量有关
+6. 闭包是存储在栈上，并且除了捕获的数据外，闭包本身不包含任何额外函数指针指向闭包的代码
 
 ```
 fn counter(i: i32) -> impl FnMut(i32) -> i32 {
@@ -1274,6 +1671,10 @@ fn counter(i: i32) -> impl FnMut(i32) -> i32 {
     let mut f = counter(21);
     assert_eq!(42, f(21))
 ```
+
+如果不使用 move 转移所有权，闭包会引用上下文中的变量，这个引用受借用规则的约束，所以只要编译通过，那么闭包对变量的引用就不会超过变量的生命周期，没有内存安全问题。
+
+如果使用 move 转移所有权，上下文中的变量在转移后就无法访问，闭包完全接管这些变量，它们的生命周期和闭包一致，所以也不会有内存安全问题。
 
 #### 2.8.2.2 闭包实现原理
 
@@ -1454,11 +1855,19 @@ fn counter(i: i32) -> impl FnMut(i32) -> i32 {
 2. 修改捕获变量，则实现FnMut
 3. 未改捕获变量，则实现Fn
 
+![img](https://static001.geekbang.org/resource/image/cb/25/cba964802787a05f173099b13d210b25.jpg?wh=2256x1296)
+
 #### 2.8.2.4 特殊情况
 
 1. 编译器会把FnOnce当成fn(T)函数指针区看待
 2. Fn/FnMut/FnOnce 关系依次继承，对应所有权语义三件套
 3. 唯一不可变借用
+
+```
+FnOnce 只能调用一次；
+FnMut 允许在执行时修改闭包的内部数据，可以执行多次；
+Fn 不允许修改闭包的内部数据，也可以执行多次。
+```
 
 #### 2.8.2.5 逃逸闭包和非逃逸闭包
 
@@ -1626,11 +2035,31 @@ struct Point {
 
 ## 2.10 智能指针
 
+智能指针是一个表现行为很像指针的数据结构，但除了指向数据的指针外，它还有元数据以提供额外的处理能力。智能指针一定是一个胖指针，但胖指针不一定是一个智能指针。比如 &str 就只是一个胖指针，它有指向堆内存字符串的指针，同时还有关于字符串长度的元数据
+
+除了 String，在之前的课程中我们遇到了很多智能指针，比如用于在堆上分配内存的 Box 和 Vec、用于引用计数的 Rc 和 Arc 。很多其他数据结构，如 PathBuf、Cow<'a, B>、MutexGuard、RwLockReadGuard 和 RwLockWriteGuard 等也是智能指针
+
 ### 2.10.1 在堆上分配内存：Box
 
 从语义上Rust的类型分为值语义和指针语义。存储在栈上的就是值语义，在语义层面上就是一种值。动态字符串和动态数组会在运行时增长，它们实际上属于指针语义，传递时传递的是存储在栈上的指针而不是全部数据
 
-Box是Safe Rust 中唯一的堆内存分配方式
+Box是Safe Rust 中唯一的堆内存分配方式，在使用 Box 分配堆内存的时候要注意，Box::new() 是一个函数，所以传入它的数据会出现在栈上，再移动到堆上，非常大的结构时就容易出问题
+
+```
+pub struct Box<T: ?Sized,A: Allocator = Global>(Unique<T>, A)
+```
+
+```
+pub struct Unique<T: ?Sized> {
+    pointer: *const T,
+    // NOTE: this marker has no consequences for variance, but is necessary
+    // for dropck to understand that we logically own a `T`.
+    //
+    // For details, see:
+    // https://github.com/rust-lang/rfcs/blob/master/text/0769-sound-generic-drop.md#phantom-data
+    _marker: PhantomData<T>,
+}
+```
 
 ```
 let x: Box<i32> = Box::new(42);
@@ -1822,6 +2251,291 @@ Vec是胖指针
         }
     }
     */
+```
+
+### 2.10.4 Cow<'a,B>
+
+Cow 是 Rust 下用于提供写时克隆（Clone-on-Write）的一个智能指针，它跟虚拟内存管理的写时复制（Copy-on-write）有异曲同工之妙：包裹一个只读借用，但如果调用者需要所有权或者需要修改内容，那么它会 clone 借用的数据
+
+```
+pub enum Cow<'a, B> where B: 'a + ToOwned + ?Sized {
+  Borrowed(&'a B),
+  Owned(<B as ToOwned>::Owned),
+}
+```
+
+何时用？如果 Cow<'a, B> 中的 Owned 数据类型是一个需要在堆上分配内存的类型，如 String、Vec 等，还能减少堆内存分配的次数。相对于栈内存的分配释放来说，堆内存的分配和释放效率要低很多，其内部还涉及系统调用和锁，减少不必要的堆内存分配是提升系统效率的关键手段
+
+使用案例：
+
+```
+use std::borrow::Cow;
+
+use url::Url;
+fn main() {
+    let url = Url::parse("https://tyr.com/rust?page=1024&sort=desc&extra=hello%20world").unwrap();
+
+    let mut pairs = url.query_pairs();
+    assert_eq!(pairs.count(), 3);
+
+    let (mut k, v) = pairs.next().unwrap();
+
+    println!("Key: {:},value: {:}", k, v);
+
+
+    print_pairs((k, v));
+
+    print_pairs(pairs.next().unwrap());
+
+    print_pairs(pairs.next().unwrap());
+}
+fn print_pairs(pairs: (Cow<str>, Cow<str>)) {
+    println!(
+        "key: {},value: {}",
+        show_pairs(pairs.0),
+        show_pairs(pairs.1)
+    );
+}
+
+fn show_pairs(cow: Cow<str>) -> String {
+    match cow {
+        Cow::Borrowed(v) => format!("Borrowed :{}", v),
+        Cow::Owned(v) => format!("Owned :{}", v),
+    }
+}
+```
+
+其它第三方库对Cow的支持
+
+```
+
+use serde::Deserialize;
+use std::borrow::Cow;
+
+#[derive(Debug, Deserialize)]
+struct User<'input> {
+    #[serde(borrow)]
+    name: Cow<'input, str>,
+    age: u8,
+}
+
+fn main() {
+    let input = r#"{ "name": "Tyr", "age": 18 }"#;
+    let user: User = serde_json::from_str(input).unwrap();
+
+    match user.name {
+        Cow::Borrowed(x) => println!("borrowed {}", x),
+        Cow::Owned(x) => println!("owned {}", x),
+    }
+}
+```
+
+### 2.10.5 MutexGuard<T>
+
+它不但通过 Deref 提供良好的用户体验，还通过 Drop trait 来确保，使用到的内存以外的资源在退出时进行释放
+
+```
+pub fn lock(&self) -> LockResult<MutexGuard<'_, T>> {
+    unsafe {
+        self.inner.raw_lock();
+        MutexGuard::new(self)
+    }
+}
+```
+
+```
+
+// 这里用 must_use，当你得到了却不使用 MutexGuard 时会报警
+#[must_use = "if unused the Mutex will immediately unlock"]
+pub struct MutexGuard<'a, T: ?Sized + 'a> {
+    lock: &'a Mutex<T>,
+    poison: poison::Guard,
+}
+
+impl<T: ?Sized> Deref for MutexGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        unsafe { &*self.lock.data.get() }
+    }
+}
+
+impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        unsafe { &mut *self.lock.data.get() }
+    }
+}
+
+impl<T: ?Sized> Drop for MutexGuard<'_, T> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            self.lock.poison.done(&self.poison);
+            self.lock.inner.raw_unlock();
+        }
+    }
+}
+```
+
+当 MutexGuard 结束时，Mutex 会做 unlock，这样用户在使用 Mutex 时，可以不必关心何时释放这个互斥锁
+
+```
+
+use lazy_static::lazy_static;
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
+// lazy_static 宏可以生成复杂的 static 对象
+lazy_static! {
+    // 一般情况下 Mutex 和 Arc 一起在多线程环境下提供对共享内存的使用
+    // 如果你把 Mutex 声明成 static，其生命周期是静态的，不需要 Arc
+    static ref METRICS: Mutex<HashMap<Cow<'static, str>, usize>> =
+        Mutex::new(HashMap::new());
+}
+
+fn main() {
+    // 用 Arc 来提供并发环境下的共享所有权（使用引用计数）
+    let metrics: Arc<Mutex<HashMap<Cow<'static, str>, usize>>> =
+        Arc::new(Mutex::new(HashMap::new()));
+    for _ in 0..32 {
+        let m = metrics.clone();
+        thread::spawn(move || {
+            let mut g = m.lock().unwrap();
+            // 此时只有拿到 MutexGuard 的线程可以访问 HashMap
+            let data = &mut *g;
+            // Cow 实现了很多数据结构的 From trait，
+            // 所以我们可以用 "hello".into() 生成 Cow
+            let entry = data.entry("hello".into()).or_insert(0);
+            *entry += 1;
+            // MutexGuard 被 Drop，锁被释放
+        });
+    }
+
+    thread::sleep(Duration::from_millis(100));
+
+    println!("metrics: {:?}", metrics.lock().unwrap());
+}
+```
+
+MutexGuard 不允许 Send，只允许 Sync
+
+```
+impl<T: ?Sized> !Send for MutexGuard<'_, T> {}
+unsafe impl<T: ?Sized + Sync> Sync for MutexGuard<'_, T> {}
+```
+
+类似 MutexGuard 的智能指针有很多用途。比如要创建一个连接池，你可以在 Drop trait 中，回收 checkout 出来的连接，将其再放回连接池
+
+实现自己的智能指针
+
+```
+
+use std::{fmt, ops::Deref, str};
+
+const MINI_STRING_MAX_LEN: usize = 30;
+
+// MyString 里，String 有 3 个 word，供 24 字节，所以它以 8 字节对齐
+// 所以 enum 的 tag + padding 最少 8 字节，整个结构占 32 字节。
+// MiniString 可以最多有 30 字节（再加上 1 字节长度和 1字节 tag），就是 32 字节.
+struct MiniString {
+    len: u8,
+    data: [u8; MINI_STRING_MAX_LEN],
+}
+
+impl MiniString {
+    // 这里 new 接口不暴露出去，保证传入的 v 的字节长度小于等于 30
+    fn new(v: impl AsRef<str>) -> Self {
+        let bytes = v.as_ref().as_bytes();
+        // 我们在拷贝内容时一定要使用字符串的字节长度
+        let len = bytes.len();
+        let mut data = [0u8; MINI_STRING_MAX_LEN];
+        data[..len].copy_from_slice(bytes);
+        Self {
+            len: len as u8,
+            data,
+        }
+    }
+}
+
+impl Deref for MiniString {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        // 由于生成 MiniString 的接口是隐藏的，它只能来自字符串，所以下面这行是安全的
+        str::from_utf8(&self.data[..self.len as usize]).unwrap()
+        // 也可以直接用 unsafe 版本
+        // unsafe { str::from_utf8_unchecked(&self.data[..self.len as usize]) }
+    }
+}
+
+impl fmt::Debug for MiniString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 这里由于实现了 Deref trait，可以直接得到一个 &str 输出
+        write!(f, "{}", self.deref())
+    }
+}
+
+#[derive(Debug)]
+enum MyString {
+    Inline(MiniString),
+    Standard(String),
+}
+
+// 实现 Deref 接口对两种不同的场景统一得到 &str
+impl Deref for MyString {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        match *self {
+            MyString::Inline(ref v) => v.deref(),
+            MyString::Standard(ref v) => v.deref(),
+        }
+    }
+}
+
+impl From<&str> for MyString {
+    fn from(s: &str) -> Self {
+        match s.len() > MINI_STRING_MAX_LEN {
+            true => Self::Standard(s.to_owned()),
+            _ => Self::Inline(MiniString::new(s)),
+        }
+    }
+}
+
+impl fmt::Display for MyString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.deref())
+    }
+}
+
+fn main() {
+    let len1 = std::mem::size_of::<MyString>();
+    let len2 = std::mem::size_of::<MiniString>();
+    println!("Len: MyString {}, MiniString {}", len1, len2);
+
+    let s1: MyString = "hello world".into();
+    let s2: MyString = "这是一个超过了三十个字节的很长很长的字符串".into();
+
+    // debug 输出
+    println!("s1: {:?}, s2: {:?}", s1, s2);
+    // display 输出
+    println!(
+        "s1: {}({} bytes, {} chars), s2: {}({} bytes, {} chars)",
+        s1,
+        s1.len(),
+        s1.chars().count(),
+        s2,
+        s2.len(),
+        s2.chars().count()
+    );
+
+    // MyString 可以使用一切 &str 接口，感谢 Rust 的自动 Deref
+    assert!(s1.ends_with("world"));
+    assert!(s2.starts_with("这"));
+}
 ```
 
 ## 2.11 迭代器
@@ -3368,7 +4082,7 @@ auto 意味着编译器会在合适的场合，自动为数据结构添加它们
 
 对值类型的转换和对引用类型的转换，Rust 提供了两套不同的 trait：值类型到值类型的转换：From / Into / TryFrom / TryInto引用类型到引用类型的转换：AsRef / AsMut
 
-From<T> / Into<T>
+**From<T> / Into<T>**
 
 ```
 pub trait From<T> {
@@ -3400,6 +4114,157 @@ impl<T> From<T> for T {
     }
 }
 ```
+
+```
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+
+fn print(v: impl Into<IpAddr>) {
+    println!("{:?}", v.into());
+}
+
+fn p<T: Into<IpAddr>>(v: T) {
+    println!("{:?}", v.into());
+}
+fn main() {
+    let v4: Ipv4Addr = "2.2.2.2".parse().unwrap();
+    let v6: Ipv6Addr = "::1".parse().unwrap();
+
+    // IPAddr 实现了 From<[u8; 4]，转换 IPv4 地址
+    print([1, 1, 1, 1]);
+    // IPAddr 实现了 From<[u16; 8]，转换 IPv6 地址
+    print([0xfe80, 0, 0, 0, 0xaede, 0x48ff, 0xfe00, 0x1122]);
+    // IPAddr 实现了 From
+    p(v4);
+    // IPAddr 实现了 From
+    p(v6);
+} 
+```
+
+注意，如果你的数据类型在转换过程中有可能出现错误，可以使用 TryFrom<T> 和 TryInto<T>，它们的用法和 From<T> / Into<T> 一样，只是 trait 内多了一个关联类型 Error，且返回的结果是 Result<T, Self::Error>
+
+**AsRef<T> / AsMut<T>**
+
+```
+pub trait AsRef<T> where T: ?Sized {
+    fn as_ref(&self) -> &T;
+}
+
+pub trait AsMut<T> where T: ?Sized {
+    fn as_mut(&mut self) -> &mut T;
+}
+```
+
+```
+enum Language {
+    Rust,
+    TS,
+    Elixir,
+    Haskell,
+}
+
+// 把一种类型转为引用，实际上就是转为另一种类型
+impl AsRef<str> for Language {
+    fn as_ref(&self) -> &str {
+        match self {
+            Language::Rust => "Rust",
+            Language::TS => "TypeScript",
+            Language::Elixir => "Elixir",
+            Language::Haskell => "Haskell",
+        }
+    }
+}
+
+fn print_ref(v: impl AsRef<str>) {
+    println!("{}", v.as_ref());
+}
+fn main() {
+    let rust = Language::TS;
+
+    print_ref("hello world");
+
+    print_ref("hello world".to_string());
+
+    let r = rust.as_ref();
+    println!("{}", r);
+
+    print_ref(rust)
+}
+```
+
+如果你的代码出现 v.as_ref().clone() 这样的语句，也就是说你要对 v 进行引用转换，然后又得到了拥有所有权的值，那么你应该实现 From，然后做 v.into()
+
+**操作符相关：Deref / DerefMut**
+
+![img](https://static001.geekbang.org/resource/image/a2/19/a28619aae702e186aa115af94300dc19.jpg?wh=2743x1515)
+
+```
+pub trait Deref {
+    // 解引用出来的结果类型
+    type Target: ?Sized;
+    fn deref(&self) -> &Self::Target;
+}
+
+pub trait DerefMut: Deref {
+    fn deref_mut(&mut self) -> &mut Self::Target;
+}
+```
+
+```
+use std::ops::{Deref, DerefMut};
+
+#[derive(Debug)]
+struct Buffer<T>(Vec<T>);
+
+impl<T> Buffer<T> {
+    fn new(v: impl Into<Vec<T>>) -> Self {
+        Self(v.into())
+    }
+}
+
+impl<T> Deref for Buffer<T> {
+    type Target = [T];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Buffer<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+fn main() {
+    let mut buf = Buffer::new([1, 3, 2, 4, 9, 17, 200, 83, 21]);
+    buf.sort();
+
+    println!("buf: {:?}", buf)
+}
+```
+
+其他：Debug / Display / Default
+
+```
+pub trait Debug {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>;
+}
+
+pub trait Display {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error>;
+}
+```
+
+```
+pub trait Default {
+    fn default() -> Self;
+}
+```
+
+Default trait 用于为类型提供缺省值。它也可以通过 derive 宏 #[derive(Default)]
+
+![img](https://static001.geekbang.org/resource/image/c4/5e/c40e3efef2bec9140c95054547958a5e.jpg?wh=2743x1765)
+
+trait 是行为的延迟绑定。我们可以在不知道具体要处理什么数据结构的前提下，先通过 trait 把系统的很多行为约定好。这也是为什么开头解释标准 trait 时，频繁用到了“约定……行为”
 
 ## 3.6 Rust语言编程范式
 
@@ -3523,7 +4388,30 @@ result的错误需要处理，当直接使用unwrap时，如果结果是Err，�
 
 引用第三方库
 
-使用？
+使用？：如果你只想传播错误，不想就地处理，可以用 ? 操作符
+
+虽然 ? 操作符使用起来非常方便，但你要注意在不同的错误类型之间是无法直接使用的，需要实现 From trait 在二者之间建立起转换的桥梁，这会带来额外的麻烦
+
+![img](https://static001.geekbang.org/resource/image/19/0f/1931bac666fd3596a06ef3700b79f60f.jpg?wh=2839x1089)
+
+Rust 还为 Option 和 Result 提供了大量的辅助函数，如 map / map_err / and_then
+
+![img](https://static001.geekbang.org/resource/image/0c/e0/0c3ae02cc6d8994e500fc02385a605e0.jpg?wh=2140x2132)
+
+```
+Ok(data)
+  .and_then(validate)
+  .and_then(process)
+  .map(transform)
+  .and_then(store)
+  .map_error(...)
+```
+
+执行流程
+
+![img](https://static001.geekbang.org/resource/image/fd/4c/fdbbbee8e125205efd00f8648fc8b04c.jpg?wh=2753x844)
+
+Option 和 Result 可以互换
 
 ### 3.7.4 Panic
 
@@ -3534,6 +4422,52 @@ Panic的两种类型：unwinding（栈展开） aborting（中止）无法恢复
 错误传播
 
 如果想让错误传播，可以把所有的 unwrap() 换成 ? 操作符，并让 main() 函数返回一个 Result
+
+```
+fut
+  .await?
+  .process()?
+  .next()
+  .await?;
+```
+
+**Error trait 和错误类型的转换**：
+
+Result 里 E 是一个代表错误的数据类型。为了规范这个代表错误的数据类型的行为，Rust 定义了 Error trait
+
+```
+pub trait Error: Debug + Display {
+    fn source(&self) -> Option<&(dyn Error + 'static)> { ... }
+    fn backtrace(&self) -> Option<&Backtrace> { ... }
+    fn description(&self) -> &str { ... }
+    fn cause(&self) -> Option<&dyn Error> { ... }
+}
+```
+
+Thiserror 和 anyhow已经简化了
+
+```
+use thiserror::Error;
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum DataStoreError {
+    #[error("data store disconnected")]
+    Disconnect(#[from] io::Error),
+    #[error("the data for key `{0}` is not available")]
+    Redaction(String),
+    #[error("invalid header (expected {expected:?}, found {found:?})")]
+    InvalidHeader {
+        expected: String,
+        found: String,
+    },
+    #[error("unknown data store error")]
+    Unknown,
+}
+```
+
+如果你在撰写一个 Rust 库，那么 thiserror 可以很好地协助你对这个库里所有可能发生的错误进行建模。而 anyhow 实现了 anyhow::Error 和任意符合 Error trait 的错误类型之间的转换，让你可以使用 ? 操作符，不必再手工转换错误类型。
+
+作为一名严肃的开发者，建议在开发前，先用类似 thiserror 的库定义好你项目中主要的错误类型，并随着项目的深入，不断增加新的错误类型，让系统中所有的潜在错误都无所遁形
 
 ## 3.8 元编程
 
