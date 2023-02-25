@@ -1,35 +1,25 @@
-use std::marker::PhantomData;
+use std::io::{BufWriter, Write};
+use std::net::TcpStream;
 
 #[derive(Debug)]
-struct Container<T, U> {
-    data: T,
-    marker: PhantomData<U>,
+struct MyWriter<W> {
+    writer: W,
 }
 
-impl<T, U> Container<T, U> {
-    fn new(data: T) -> Container<T, U> {
-        Container {
-            data,
-            marker: PhantomData,
+impl<W: Write> MyWriter<W> {
+    pub fn new(addr: &str) -> MyWriter<BufWriter<TcpStream>> {
+        let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
+        MyWriter {
+            writer: BufWriter::new(stream),
         }
+    }
+
+    pub fn write(&mut self, buf: &str) -> std::io::Result<()> {
+        self.writer.write_all(buf.as_bytes())
     }
 }
 
 fn main() {
-    // 我们知道结构体的第二个字段是u32，但是它的值是多少我们并不在意
-    let _container: Container<i32, u32> = Container::new(42);
-    println!("{:?}", _container);
-
-    let ref mut your = 100u64;
-
-    {
-        let me = your;
-        println!("{:?}", me);
-
-        *me = *me + 30u64;
-
-        let a = 100u32;
-    }
-
-    // println!("{:?}", your);
+    let mut writer = MyWriter::<BufWriter<TcpStream>>::new("127.0.0.1:8080");
+    writer.write("hello world!");
 }

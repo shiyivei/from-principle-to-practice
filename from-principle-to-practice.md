@@ -19,6 +19,8 @@ Rust 采百家之长，从 C++ 学习并强化了 move 语义和 RAII，从 Cycl
 3. 非法释放已经释放或未分配的指针（rust释放使用的是drop trait）
 4. 缓冲区溢出（？？？，有空了需要学一点C语言和C++）
 
+Rust本质上是限制了对指针使用的行为，就像React一样，
+
 ### 1.1.2 安全无缝地沟通C语言
 
 通过C-ABI零成本和C语言打交道
@@ -135,7 +137,7 @@ pub fn main() {
     S::correlation_function();
     S::method1();
 
-    /// 3.泛型函数-turbofish操作符
+    /// 3.泛型函数-turbofish操作符，rust也会支持局部类型推断
     ///
 
     // 将0到9收集到Vec中,默认类型是i32，但是可以指定为u64
@@ -147,6 +149,19 @@ pub fn main() {
     let vec2 = Vec::<u8>::with_capacity(1024);
 
     println!("{:?}", vec2);
+    
+    // 类型推断
+    
+    fn main() {
+        let numbers = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+        let even_numbers = numbers
+        .into_iter()
+        .filter(|n| n % 2 == 0)
+        .collect::<Vec<_>>();
+
+				println!("{:?}", even_numbers);
+		}
 }
 ```
 
@@ -177,6 +192,8 @@ Rust语法骨架只包含三类元素
 在Rust中，一切皆表达式,它是以分号 `;` 和花括号`{}`进行区分，而不是以循环、匹配等条件作为区分
 
 一切皆表达式可以引申为一切皆类型，因为表达式都有值，而值都有类型
+
+let / fn / static / const 是一些定性语句
 
 ### 2.4.1 表达式分类：按语法骨架
 
@@ -279,6 +296,8 @@ let b: &str = {
 ```
 
 ### 2.4.3 所有权语义在表达式上的体现
+
+![image-20230224195145935](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230224195145935.png)
 
 #### 2.4.3.1 位置表达式的移动
 
@@ -558,7 +577,9 @@ let tao = '道';
     println!("emoji {}", s)
 ```
 
-实现的 trait 有 Copy、Clone等
+实现的 trait 有 Copy、Clone等，Clone是深拷贝，堆栈内存一起拷贝
+
+clone 方法的接口是 &self，这在绝大多数场合下都是适用的，我们在 clone 一个数据时只需要有已有数据的只读引用。但对 Rc 这样在 clone() 时维护引用计数的数据结构，clone() 过程中会改变自己，所以要用 Cell 这样提供内部可变性的结构来进行改变
 
 6. 字符串，rust中的字符串有非常多的类型，从根本上讲是为了适应不同的场景，如下：
 
@@ -707,17 +728,98 @@ println!("{:?}", std::mem::size_of::<A>());
 println!("{:?}", std::mem::size_of::<B>());
 ```
 
+##### 2.6.3.2.2 枚举
+
+枚举在Rust下是一个标签联合体，大小是标签的大小加上最大类型的长度。enum的最大长度是最大类型的长度+8
+
+常见的类型长度
+
+```
+Type                        T    Option<T>    Result<T, io::Error>
+----------------------------------------------------------------
+u8                          1        2           24
+f64                         8       16           24
+&u8                         8        8           24
+Box<u8>                     8        8           24
+&[u8]                      16       16           24
+String                     24       24           32
+Vec<u8>                    24       24           32
+HashMap<String, String>    48       48           56
+E                          56       56           64
+```
+
+对于 Option 结构而言，它的 tag 只有两种情况：0 或 1， tag 为 0 时，表示 None，tag 为 1 时，表示 Some。tag占1个字节。64位CPU对对齐时8字节
+
+rust如何优化的，当tag后的类型是引用类型时，tag为0，其它情况下为1
+
+特殊的枚举类型Cow<T>, 就像 Option 一样，在返回数据的时候，提供了一种可能：要么返回一个借用的数据（只读），要么返回一个拥有所有权的数据（可写）,?代表放松问号之后的约束，？Sized代表用可变大小的类型，Rust默认泛型参数都是Sized的
+
+```
+pub enum Cow<'a, B: ?Sized + 'a> where B: ToOwned, // early bound
+{
+    // 借用的数据
+    Borrowed(&'a B),
+    // 拥有的数据
+    Owned(<B as ToOwned>::Owned), // 在rust中，子类型可以强强制转换为父类型
+}
+```
+
+late boud : 逐步添加约束，可以让约束只出现在它不得不出现的地方，这样代码的灵活性最大
+
+```
+
+use std::fs:File;
+use std::io::{BufReader, Read, Result};
+
+// 定义一个带有泛型参数 R 的 reader，此处我们不限制 R
+struct MyReader<R> {
+    reader: R,
+    buf: String,
+}
+
+// 实现 new 函数时，我们不需要限制 R
+impl<R> MyReader<R> {
+    pub fn new(reader: R) -> Self {
+        Self {
+            reader,
+            buf: String::with_capacity(1024),
+        }
+    }
+}
+
+// 定义 process 时，我们需要用到 R 的方法，此时我们限制 R 必须实现 Read trait
+impl<R> MyReader<R>
+where
+    R: Read,
+{
+    pub fn process(&mut self) -> Result<usize> {
+        self.reader.read_to_string(&mut self.buf)
+    }
+}
+
+fn main() {
+    // 在 windows 下，你需要换个文件读取，否则会出错
+    let f = File::open("/etc/hosts").unwrap();
+    let mut reader = MyReader::new(BufReader::new(f));
+
+    let size = reader.process().unwrap();
+    println!("total size read: {}", size);
+}
+```
+
 #### 2.6.3.3 容器类型
 
 ![image-20230203113058709](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203113058709.png)
 
 ##### 2.6.3.3.1 **共享容器**
 
-内部可变性：本质是把原始指针*mut 给开发者
+![img](https://static001.geekbang.org/resource/image/fc/86/fc524d667fabeec0a8a22d0e10531086.jpg?wh=3387x1982)
+
+内部可变性：本质是把原始指针*mut 给开发者，外部可变性是通过mut显式声明。
 
 1. 与继承式可变相对应（继承式可变，前面声明了一个不可变，紧接着又声明了可变）
 2. 由核心原语UnsafeCell<T>提供支持，UnsafeCell是Rust中`唯一`可以把不可变引用转为可变指针的方法
-3. 基于UnsafeCell<T>,提供了Cell<T>和RefCell<T>
+3. 基于UnsafeCell<T>,提供了Cell<T>和RefCell<T>，在运行时可变借用未声明成mut的变量
 
 ````
 ### 容器Cell、RefCell、UnsafeCell
@@ -767,7 +869,21 @@ println!("{:?}", std::mem::size_of::<B>());
 ### 3. 容器UnsafeCell 是上述两种容器的底层实现
 ````
 
+```
+let data = RefCell::new(1);
+    // 绕过了非词法作用域的检查
+    // 在运行时检查
+    {
+        //对值进行可变借用
+        let mut v = data.borrow_mut();
+
+        *v += 1;
+    }
+```
+
 ##### 2.6.3.3.2 集合容器
+
+以一个 Vec 为例，当你使用完堆内存目前的容量后，还继续添加新的内容，就会触发堆内存的自动增长。有时候，集合类型里的数据不断进进出出，导致集合一直增长，但只使用了很小部分的容量，内存的使用效率很低，所以你要考虑使用，比如 shrink_to_fit 方法，来节约对内存的使用。
 
 ![image-20230203113835795](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203113835795.png)
 
@@ -806,6 +922,8 @@ Rust集合容器为什么没有统一的接口（trait）：缺乏功能泛型�
 #### 2.6.3.4 泛型
 
 在Rust中,泛型是零成本的，因为会在编译期就单态化（在实际调用的位置生成具体类型相关的的代码），也叫静态分发
+
+单态化的坏处是编译速度很慢，一个泛型函数，编译器需要找到所有用到的不同类型，一个个编译，所以 Rust 编译代码的速度总被人吐槽，另一个重要因素是宏。还有一个问题：因为单态化，代码以二进制分发会损失泛型的信息
 
 ```
 fn foo<T>(x: T) -> T {
@@ -965,7 +1083,7 @@ trait中也可以定义默认实现和定义关联类型（一般是返回值类
    assert_eq!(p.unwrap(), Point(1, 2))
 ```
 
-3. trait是一种特设多态 （意思是一个接口多个实现）
+3. trait是一种特设多态 （意思是一个接口多个实现，多个类型可以实现同一个trait，Go没有泛型支持）
 
 Ad-hoc多态：一个接口多个实现
 
@@ -974,6 +1092,12 @@ Ad-hoc多态：一个接口多个实现
 例如把一个变量赋值给另一个变量时，默认情况下时发生move语义，也就是发生所有权转移，原来的变量不再有数据的所有权
 
 但是由于Copy trait的存在，凡是实现了Copy trait的类型，在发生上述行为时，所有权没有发生转移，而是为新的变量重新拷贝了一份数据（发生在栈上）
+
+```
+pub trait Copy: Clone {} // Copy trait 只是一个标记trait，虽然没有任何行为，但它可以用作 trait bound 来进行类型安全检查
+```
+
+
 
 5. trait 理论来源
 
@@ -1531,6 +1655,56 @@ assert_eq!(y, 42)
     */
 ```
 
+Rust中的值如何被销毁的？
+
+```
+pub trait Drop {
+    fn drop(&mut self);
+}
+```
+
+这里用到了 Drop trait。Drop trait 类似面向对象编程中的析构函数，当一个值要被释放，它的 Drop trait 会被调用。比如下面的代码，变量 greeting 是一个字符串，在退出作用域时，其 drop() 函数被自动调用，释放堆上包含 “hello world” 的内存，然后再释放栈上的内存：
+
+![img](https://static001.geekbang.org/resource/image/0c/ae/0c0d83776e12a099453c837c997d93ae.jpg?wh=2170x1207)
+
+结构体在调用 drop() 时，会依次调用每一个域的 drop() 函数，如果域又是一个复杂的结构或者集合类型，就会递归下去，直到每一个域都释放干净
+
+释放堆内存，简单的调用Drop trait
+
+但是可以为自定义类型手动实现Drop trait，让值的释放更受控。它还可以释放任何资源，比如 socket、文件、锁等等。
+
+```
+use std::fs::File;
+use std::io::prelude::*;
+fn main() -> std::io::Result<()> {
+    let mut file = File::create("foo.txt")?;
+    file.write_all(b"hello world")?;
+    Ok(())
+}
+```
+
+ 什么时候需要Drop trait
+
+第一种是希望在数据结束生命周期的时候做一些事情，比如记日志
+
+第二种是需要对资源回收的场景。编译器并不知道你额外使用了哪些资源，也就无法帮助你 drop 它们。比如说锁资源的释放，在 MutexGuard 中实现了 Drop 来释放锁资源
+
+```
+impl<T: ?Sized> Drop for MutexGuard<'_, T> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            self.lock.poison.done(&self.poison);
+            self.lock.inner.raw_unlock();
+        }
+    }
+}
+```
+
+注意的是，Copy trait 和 Drop trait 是互斥的，两者不能共存，当你尝试为同一种数据类型实现 Copy 时，也实现 Drop，编译器就会报错。这其实很好理解：Copy 是按位做浅拷贝，那么它会默认拷贝的数据没有需要释放的资源；而 Drop 恰恰是为了释放额外的资源而生的
+
+![img](https://static001.geekbang.org/resource/image/7d/9b/7d3760f88297fc5900c74193cae5e39b.jpg?wh=1920x900)
+
 ### 2.10.3 智能指针
 
 在Rust中，trait决定了类型的行为。所以智能指针和Deref trait、Drop trait相关
@@ -1614,6 +1788,14 @@ assert_eq!(y, 42)
 ```
 
 #### 2.10.3.2 标准库中的智能指针
+
+Rust类型备忘清单：https://cheats.rs/#data-layout
+
+![img](https://static001.geekbang.org/resource/image/98/a5/98e80265d8fbe77a9c6e53df22efafa5.png?wh=1640x402)
+
+Vec是胖指针
+
+![img](https://static001.geekbang.org/resource/image/c2/37/c2234ab79c2eaf2c76698c8f11b24d37.jpg?wh=2368x977)
 
 ![image-20230203001747611](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230203001747611.png)
 
@@ -2046,6 +2228,28 @@ move的本质是把变量进行了未初始化标记而不是立刻丢弃
 
 #### 3.3.1.2 生命周期参数
 
+生命周期参数，描述的是参数和参数之间、参数和返回值之间的关系，并不改变原有的生命周期. 生命周期标注的目的是，在参数和返回值之间建立联系或者约束。调用函数时，传入的参数的生命周期需要大于等于（outlive）标注的生命周期
+
+当每个函数都添加好生命周期标注后，编译器，就可以从函数调用的上下文中分析出，在传参时，引用的生命周期，是否和函数签名中要求的生命周期匹配。如果不匹配，就违背了“引用的生命周期不能超出值的生命周期”，编译器就会报错
+
+规则：
+
+1. 所有引用类型的参数都有独立的生命周期 'a 、'b 等。
+2. 如果只有一个引用型输入，它的生命周期会赋给所有输出。
+3. 如果有多个引用类型的参数，其中一个是 self，那么它的生命周期会赋给所有输出。
+
+规则 3 适用于 trait 或者自定义数据类型
+
+分配在堆和栈上的内存有其各自的作用域，它们的生命周期是动态的
+
+注意：当一个函数参数是引用类型，并且跟内部的局部变量做了相关运算后，再返回时也是同样的引用类型，这时候生命周期参数就比较直观了，为了避免返回局部变量而出现悬垂指针
+
+全局变量、静态变量、字符串字面量、代码等内容，在编译时，会被编译到可执行文件中的 BSS/Data/RoData/Text 段，然后在加载时，装入内存。因而，它们的生命周期和进程的生命周期一致，所以是静态的。
+
+所以，函数指针的生命周期也是静态的，因为函数在 Text 段中，只要进程活着，其内存一直存在。
+
+![img](https://static001.geekbang.org/resource/image/8f/7d/8fdc22d8ef77ecfab5d317f169a0827d.jpg?wh=2312x1394)
+
 1. 目的：为了避免出现悬垂指针
 
 2. 晚限定与早限定
@@ -2114,6 +2318,26 @@ use std::fmt::Debug;
 
 ### 3.3.2 类型系统
 
+![](https://static001.geekbang.org/resource/image/09/15/09ea90a4df9fb7652389f611412c1715.jpg?wh=3175x1490)
+
+![img](https://static001.geekbang.org/resource/image/41/7c/41faf5451f7490640e8529b0c7a1627c.jpg?wh=2382x1544)
+
+里氏替换原则简单说就是子类型对象可以在程序中代替父类型对象。它是运行时多态的基础。所以如果要支持运行时多态，以及动态分派、后期绑定、反射等功能，编程语言需要支持动态类型系统
+
+按类型定义、检查以及检查时能否被推导出来，Rust 是强类型 + 静态类型 + 显式类型
+
+类型系统完全是一种工具，编译器在编译时对数据做静态检查，或者语言在运行时对数据做动态检查的时候，来保证某个操作处理的数据是开发者期望的数据类型。类型系统其实就是，对类型进行定义、检查和处理的系统
+
+Rhs类型，是对值的区分，它包含了值在内存中的长度、对齐以及值可以进行的操作等信息
+
+在类型系统中，多态是一个非常重要的思想，它是指在使用相同的接口时，不同类型的对象，会采用不同的实现
+
+对于动态类型系统，多态通过鸭子类型（duck typing）实现；而对于静态类型系统，多态可以通过参数多态（parametric polymorphism）、特设多态（adhoc polymorphism）和子类型多态（subtype polymorphism）实现
+
+参数多态是指，代码操作的类型是一个满足某些约束的参数，而非具体的类型。特设多态是指同一种行为有多个不同实现的多态。比如加法，可以 1+1，也可以是 “abc” + “cde”、matrix1 + matrix2、甚至 matrix1 + vector1。在面向对象编程语言中，特设多态一般指函数的重载
+
+子类型多态是指，在运行时，子类型可以被当成父类型使用。在 Rust 中，参数多态通过泛型来支持、特设多态通过 trait 来支持、子类型多态可以用 trait object 来支持
+
 Rust编译器遵循类型理论：仿射类型：它是一种子结构类型系统。意义：资源最多只能被使用一次.
 
 Rust类型系统有两种语义：移动语义（默认）复制语义（该类型必须实现Copy trait：数据能够被安全的复制）
@@ -2128,9 +2352,35 @@ pub trait Copy: Clone { }
 
 Copy本质上是按位复制，并且不可以被重载，clone隐式调用，可以显式实现和调用
 
+一个特殊的例子，原生指针是Copy的
+
+```
+// raw pointer is Copy 
+is_copy::<*const String>(); 
+is_copy::<*mut String>();
+```
+
+可变引用和非固定大小的数据结构没有实现copy
+
+一些组合类型
+
+![img](https://static001.geekbang.org/resource/image/33/c3/337088350e42836cb3372e7c5c460ec3.jpg?wh=2280x1777)
+
+一些原生类型
+
+![img](https://static001.geekbang.org/resource/image/71/d0/719040f24323c50b40724d4efb9211d0.jpg?wh=5000x5506)
+
 ### 3.3.3 内存管理
 
-以“hello world” 串常量（string literal）为例，在编译时被存入可执行文件的 .RODATA 段（GCC）或者 .RDATA 段（VC++），然后在程序加载时，获得一个固定的内存地址。
+栈内存“分配”和“释放”都很高效，在编译期就确定好了，因而它无法安全承载动态大小或者生命周期超出帧存活范围外的值。所以，我们需要运行时可以自由操控的内存，也就是堆内存，来弥补栈的缺点
+
+堆内存足够灵活，然而堆上数据的生命周期也比较难管理
+
+但是，大部分堆内存的需求在于动态大小，小部分需求是更长的生命周期。所以Rust默认将堆内存的生命周期和使用它的栈内存的生命周期绑在一起，并留了个小口子 leaked 机制，让堆内存在需要的时候，可以有超出帧存活期的生命周期
+
+![img](https://static001.geekbang.org/resource/image/e3/b1/e381fa9ab73036480df9c8a182dab4b1.jpg?wh=2562x1394)
+
+以“hello world” 串常量（string literal）为例，在编译时被存入可执行文件的 .RODATA 段（GCC）或者 .RDATA 段（VC++），然后在程序加载时，获得一个固定的内存地址
 
 ![img](https://static001.geekbang.org/resource/image/a7/4c/a7e7f2334460f15f9afd04ebd710b54c.jpg?wh=2312x2043)
 
@@ -2154,11 +2404,18 @@ Rc<T>和Arc<T>引用计数的容器：可以共享所有权，强指针有所有
 
 
 
-### 3.3.4 借用
+### 3.3.4 引用（借用）
 
-借用本质上指的是所有权的借用。可以把它看作是一个指针（被借用者可以看作是内存位置），但是它是安全的，经过Rust编译器安全检查的。安全检查包括一些行为，比如可变与不可借用/使用等。Safe Rust中，引用永远是指向有效的数据
+![image-20230224220358467](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230224220358467.png)
+
+借用本质上指的是所有权的借用，共享所有权。可以把它看作是一个受控指针（被借用者可以看作是内存位置），但是它是安全的，经过Rust编译器安全检查的。安全检查包括一些行为，比如可变与不可借用/使用等。Safe Rust中，引用永远是指向有效的数据
+
+Rust中的借用和引用是一个意思，并且是一等公民，和其他类型地位相等
 
 关于裸指针（没有安全的外衣）
+
+Rust中的引用传递是传值，不像java那样，引用是数据对象的别名
+对借用的可能指向已经释放的数据这样的内存安全问题，对引用增加了生命周期约束：借用不能超过值的生存期。并且，可变借用是不Copy的。逻辑完美
 
 ### 3.3.5 共享
 
@@ -2167,11 +2424,117 @@ Rc<T>和Arc<T>引用计数的容器：可以共享所有权，强指针有所有
 
 引用计数容器Rc和Arc以及同步所和互斥锁（Mutex<T>和RwLock<T>）
 
+Arc 内部的引用计数使用了 Atomic Usize ，而非普通的 usize。从名称上也可以感觉出来，Atomic Usize 是 usize 的原子类型，它使用了 CPU 的特殊指令，来保证多线程下的安全。
+
+如果我们要在多线程中，使用内部可变性，Rust 提供了 Mutex 和 RwLock。
+
+```
+ let a = Rc::new(1);
+    let b = a.clone();
+    let c = a.clone();
+
+    // 如下三个变量地址是一样的（clone只会增加引用计数）
+
+    println!("{:p}", a);
+    println!("{:p}", b);
+    println!("{:p}", c);
+
+    let a = Arc::new(1);
+    let b = a.clone();
+    let c = a.clone();
+
+    // 如下三个变量地址是一样的
+
+    println!("{:p}", a);
+    println!("{:p}", b);
+    println!("{:p}", c);
+
+     // 如下三个变量地址是不一样的
+
+    let l = String::from("hello Rust");
+    let m = l.clone();
+    let n = l.clone();
+
+    println!("{:p}", l.as_ptr());
+    println!("{:p}", m.as_ptr());
+    println!("{:p}", n.as_ptr());
+```
+
+示意图：但是为什么出现了三个所有者指向同一块数据的情况呢？从编译器的角度看，每个变量都有一个Rc/Arc，所以不违反所有权规则。其实通过地址我们发现并不是三个变量，而是一个变量被标记了三次
+
+![img](https://static001.geekbang.org/resource/image/a3/8c/a3510f9b565577bc74bc0dcda0b3e78c.jpg?wh=1920x1300)
+
 ![image-20230205175521563](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230205175521563.png)
 
+Box::leak（）机制：提供了创建不受栈内存控制的堆内存。它相当于撕开了一个口子，允许内存泄漏，Rc/Arc指向的堆内存可以绕过编译器检查，然后再使用引用计数在合适的时机结束内存的生命周期（想定多长就多长）。其他也能绕过编译器检查的机制：Box::into_raw() / ManualDrop。其它情况下，堆内存的生命周期会和其栈内存的生命周期绑定在一起。来确保引用的生命周期不超出值的生命周期
 
+如果值创建在局部，生命周期就是动态的，生命周期约定用'a,'b小写字母来表示
+
+总结：静态检查，靠编译器保证代码符合所有权规则；动态检查，通过 Box::leak 让堆内存拥有不受限的生命周期，然后在运行过程中，通过对引用计数的检查，保证这样的堆内存最终会得到释放。
+
+### 2.3.6 特殊情况
+
+1. 有向无环图（DAG）：某个节点可能有两个或者两个以上的节点指向它
+
+```
+use std::{rc::Rc, sync::Arc};
+
+type NODE = Rc<Node>;
+
+#[derive(Debug)]
+struct Node {
+    id: usize,
+
+    // 用Rc把节点包裹住，想创建多少个指向它的引用都行
+    downstream: Option<NODE>,
+}
+
+impl Node {
+    pub fn new(id: usize) -> Node {
+        Node {
+            id,
+            downstream: None,
+        }
+    }
+
+    pub fn update_downstream(&mut self, downstream: NODE) {
+        self.downstream = Some(downstream);
+    }
+
+    pub fn get_downstream(&self) -> Option<NODE> {
+        self.downstream.as_ref().map(|v| v.clone())
+    }
+}
+
+fn main() {
+    let mut node1 = Node::new(1);
+    let mut node2 = Node::new(2);
+    let mut node3 = Node::new(3);
+
+    let node4 = Node::new(4);
+
+    node3.update_downstream(Rc::new(node4));
+    node1.update_downstream(Rc::new(node3));
+    node2.update_downstream(node1.get_downstream().unwrap());
+
+    println!("node1: {:#?}", node1);
+    println!("node2: {:#?}", node2);
+}
+```
+
+使用RefCell获得内部可变性
+
+2. 多线程共享变量
+
+此时Rust所有权静态检查无法处理，Rust提供了运行时动态检查来满足这些特殊场景。也就是前一节所提到的Rc和Arc这两个容器（智能指针）
+
+注意：堆是唯一可以让动态创建的数据被到处使用的内存
+
+这也是 Rust 处理很多问题的思路：编译时，处理大部分使用场景，保证安全性和效率；运行时，处理无法在编译时处理的场景，会牺牲一部分效率，提高灵活性。后续讲到静态分发和动态分发也会有体现，这个思路很值得我们借鉴
 
 ## 3.4 线程安全：线程和并发
+
+Mutex 是互斥量，获得互斥量的线程对数据独占访问，RwLock 是读写锁，获得写锁的线程对数据独占访问，但当没有写锁的时候，允许有多个读锁。读写锁的规则和 Rust 的借用规则非常类似
 
 很多拥有高并发处理能力的编程语言，会在用户程序中嵌入一个 M:N 的调度器，把 M 个并发任务，合理地分配在 N 个 CPU core 上并行运行，让程序的吞吐量达到最大。
 
@@ -2216,6 +2579,30 @@ Rust使用了强大的类型系统以及两个专用的trait来在编译期时�
 ```
 
 ### 3.4.2 线程间共享数据
+
+如果一个类型 T: Send，那么 T 在某个线程中的独占访问是线程安全的；如果一个类型 T: Sync，那么 T 在线程间的只读共享是安全的。一个类型 T 满足 Sync trait，当且仅当 &T 满足 Send trait
+
+如果一个类型 T 实现了 Send trait，意味着 T 可以安全地从一个线程移动到另一个线程，也就是说所有权可以在线程间移动
+
+如果一个类型 T 实现了 Sync trait，则意味着 &T 可以安全地在多个线程中共享。一个类型 T 满足 Sync trait，当且仅当 &T 满足 Send trait
+
+基本原生类型都支持 sync 和 send，不支持的有：
+
+裸指针 *const T / *mut T。它们是不安全的，所以既不是 Send 也不是 Sync
+
+UnsafeCell 不支持 Sync。也就是说，任何使用了 Cell 或者 RefCell 的数据结构不支持 Sync
+
+引用计数 Rc 不支持 Send 也不支持 Sync。所以 Rc 无法跨线程
+
+```
+pub fn spawn<F, T>(f: F) -> JoinHandle<T> 
+where
+    F: FnOnce() -> T,
+    F: Send + 'static,
+    T: Send + 'static,
+```
+
+'static 意思是闭包捕获的自由变量必须是一个拥有所有权的类型，或者是一个拥有静态生命周期的引用；Send 意思是，这些被捕获自由变量的所有权可以从一个线程移动到另一个线程
 
 1. 手动实现必要的trait：共享借用和所有权类型的数据
 
@@ -2392,7 +2779,46 @@ ABA问题
 
 ## 3.5 trait 和泛型
 
+特殊的trait默认值 Global，它是Rust默认的全局分配器，在程序运行时分配和释放内存
+
+A 这个参数有默认值 Global，它是 Rust 默认的全局分配器，这也是为什么 Vec 虽然有两个参数，使用时都只需要用 T。
+
+```
+pub struct Vec<T, A: Allocator = Global> {
+    buf: RawVec<T, A>,
+    len: usize,
+}
+
+pub struct RawVec<T, A: Allocator = Global> {
+    ptr: Unique<T>,
+    cap: usize,
+    alloc: A,
+}
+```
+
 让一个类型拥有方法有两种方式：自定义关联函数（使用其他类型作为泛型约束），为其实现trait
+
+特殊的泛型参数Rhs代表加号右边的值，在add方法中默认是Self，也就是如果不提供泛型参数，左值和右值相同类型
+
+```
+pub trait Add<Rhs = Self> {
+    type Output;
+    #[must_use]
+    fn add(self, rhs: Rhs) -> Self::Output;
+}
+```
+
+等价写法
+
+```
+fn name(animal: impl Animal) -> &'static str { animal.name()}
+```
+
+```
+fn name<T: Animal>(animal: T) -> &'static str;
+```
+
+注意区别特设多态、子类型多态
 
 ### 3.5.1 trait
 
@@ -2412,6 +2838,67 @@ ABA问题
 ```
 
 抽象类型（trait object）：因为trait中包含了很多方法，在运行时都化作trait对象。用一个trait 对象可以表示同样实现了 trait的多种类型
+
+我们无法在编译期给定一个具体类型，所以我们要有一种手段，告诉编译器，此处需要并且仅需要任何实现了该 trait的数据类型。在 Rust 里，这种类型叫 Trait Object，表现为 &dyn Trait 或者 Box<dyn Trait>,这里的dyn仅仅是用来区分trait 类型还是普通类型
+
+```
+pub fn format(input: &mut String, formatters: Vec<&dyn Formatter>) {
+    for formatter in formatters {
+        formatter.format(input);
+    }
+}
+```
+
+trait object 是动态分派
+
+```
+
+pub trait Formatter {
+    fn format(&self, input: &mut String) -> bool;
+}
+
+struct MarkdownFormatter;
+impl Formatter for MarkdownFormatter {
+    fn format(&self, input: &mut String) -> bool {
+        input.push_str("\nformatted with Markdown formatter");
+        true
+    }
+}
+
+struct RustFormatter;
+impl Formatter for RustFormatter {
+    fn format(&self, input: &mut String) -> bool {
+        input.push_str("\nformatted with Rust formatter");
+        true
+    }
+}
+
+struct HtmlFormatter;
+impl Formatter for HtmlFormatter {
+    fn format(&self, input: &mut String) -> bool {
+        input.push_str("\nformatted with HTML formatter");
+        true
+    }
+}
+
+pub fn format(input: &mut String, formatters: Vec<&dyn Formatter>) {
+    for formatter in formatters {
+        formatter.format(input);
+    }
+}
+
+fn main() {
+    let mut text = "Hello world!".to_string();
+    let html: &dyn Formatter = &HtmlFormatter;
+    let rust: &dyn Formatter = &RustFormatter;
+    let formatters = vec![html, rust];
+    format(&mut text, formatters);
+
+    println!("text: {}", text);
+}
+```
+
+
 
 trait 有两种分发类型：静态分发（单态化）：生成具体类型的函数
 
@@ -2550,6 +3037,10 @@ use core::any::{Any, TypeId};
 
 #### 3.5.2.2 trait对象的本质
 
+Trait Object 的底层逻辑就是胖指针。其中，一个指针指向数据本身，另一个则指向虚函数表（vtable）。所以，Rust 里的 Trait Object 没什么神秘的，它不过是我们熟知的 C++ / Java 中 vtable 的一个变体而已
+
+![img](https://static001.geekbang.org/resource/image/49/1d/4900097edab0yye11233e14ef857be1d.jpg?wh=2248x1370)
+
 在运行时，一旦使用了关于接口的引用，变量原本的类型被抹去，我们无法单纯从一个指针分析出这个引用具备什么样的能力。因此，在生成这个引用的时候，我们需要构建胖指针，除了指向数据本身外，还需要指向一张涵盖了这个接口所支持方法的列表。这个列表，就是我们熟知的虚表（virtual table）。
 
  trait定义了共同的行为
@@ -2567,6 +3058,8 @@ trait 对象本质上是一个虚表
 当多个类型实现了trait中的方法时，返回类型实例无法确定。对象安全就要确保方法能被安全的调用
 
 编译器如何确保对象安全？如果trait能实现自己就是对象安全的 
+
+如果 trait 所有的方法，返回值是 Self 或者携带泛型参数，那么这个 trait 就不能产生 trait object。如果一个 trait 只有部分方法返回 Self 或者使用了泛型参数，那么这部分方法在 trait object 中不能调用。
 
 ```
 
@@ -2772,6 +3265,8 @@ use core::ops::Add;
     }
 ```
 
+![img](https://static001.geekbang.org/resource/image/59/e6/59bd1c6f90b99e9604e6602e33a622e6.jpg?wh=2375x2173)
+
 #### 3.5.2.5 trait 覆盖实现
 
 Rust trait中的方法不允许覆盖实现
@@ -2856,6 +3351,54 @@ Rust trait中的方法不允许覆盖实现
     let concrete: Box<dyn Test> = Box::new(Concrete);
     // concrete.fails();
     concrete.works();
+```
+
+#### 3.5.2.8 标记 trait
+
+Sized / Send / Sync / Unpin / Copy
+
+```
+pub unsafe auto trait Send {}
+pub unsafe auto trait Sync {}
+```
+
+auto 意味着编译器会在合适的场合，自动为数据结构添加它们的实现，如果开发者手工实现这两个 trait ，要自己为它们的安全性负责
+
+类型转换trait From / Into/AsRef / AsMut
+
+对值类型的转换和对引用类型的转换，Rust 提供了两套不同的 trait：值类型到值类型的转换：From / Into / TryFrom / TryInto引用类型到引用类型的转换：AsRef / AsMut
+
+From<T> / Into<T>
+
+```
+pub trait From<T> {
+    fn from(T) -> Self;
+}
+
+pub trait Into<T> {
+    fn into(self) -> T;
+}
+```
+
+```
+// 实现 From 会自动实现 Into,所以需要的时候，不要去实现 Into，只要实现 From 就好
+impl<T, U> Into<U> for T where U: From<T> {
+    fn into(self) -> U {
+        U::from(self)
+    }
+}
+```
+
+From 和 Into 还是自反的：把类型 T 的值转换成类型 T，会直接返回
+
+```
+
+// From（以及 Into）是自反的
+impl<T> From<T> for T {
+    fn from(t: T) -> T {
+        t
+    }
+}
 ```
 
 ## 3.6 Rust语言编程范式
