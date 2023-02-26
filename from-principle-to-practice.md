@@ -1855,7 +1855,7 @@ fn counter(i: i32) -> impl FnMut(i32) -> i32 {
 2. 修改捕获变量，则实现FnMut
 3. 未改捕获变量，则实现Fn
 
-![img](https://static001.geekbang.org/resource/image/cb/25/cba964802787a05f173099b13d210b25.jpg?wh=2256x1296)
+![img](https://static001.geekbang.org/resource/image/cb/25/cba964802787a05f173099b13d210b25.jpg?wh=2256x1296) 
 
 #### 2.8.2.4 特殊情况
 
@@ -5096,6 +5096,8 @@ tower = { version = "0.4.13", features = ["util", "timeout", "load-shed", "limit
 tower-http = { version = "0.3.5", features = ["add-extension", "compression-full"] } # http中间件
 tracing = "0.1.37" # 日志和追踪
 tracing-subscriber = "0.3.16" # 日志和追踪
+async-prost = "0.2.1" # 支持把 protobuf 封装成 TCP frame
+futures = "0.3" # 提供 Stream trait
 ```
 
 ```
