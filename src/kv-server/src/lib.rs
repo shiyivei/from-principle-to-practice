@@ -8,5 +8,10 @@
 // 再需要把查询结果返回去
 // 整个过程应该支持异步编程
 
+mod error;
 mod pb;
+mod service;
+mod storage;
+pub use error::KvError;
 pub use pb::abi::*;
+pub use storage::Storage;
