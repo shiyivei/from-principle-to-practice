@@ -93,7 +93,7 @@ pub fn format_line(line: &str, lineno: usize, range: Range<usize>) -> String {
     let prefix = &line[..start];
 
     format!(
-        "{0:>6}:{1:<3}{2}{3}{4}",
+        "{0: >6}:{1: <3} {2}{3}{4}",
         lineno.to_string().blue(),
         (prefix.chars().count() + 1).to_string().cyan(),
         prefix,
@@ -109,12 +109,12 @@ mod tests {
 
     #[test]
     fn format_line_should_work() {
-        let result = format_line("Hello yivei", 1000, 7..10);
+        let result = format_line("Hello, Shi~", 1000, 7..10);
         let expected = format!(
-            "{0:>6}:{1:<3} Hello, {2}",
+            "{0: >6}:{1: <3} Hello, {2}~",
             "1000".blue(),
             "7".cyan(),
-            "yivei".red()
+            "Shi".red()
         );
 
         assert_eq!(result, expected)
@@ -136,7 +136,7 @@ mod tests {
         let expected = [
             String::from("src/main.rs"),
             format_line("hello world!", 1, 0..5),
-            format_line("hello shi!\n!", 2, 0..3),
+            format_line("hello yivei!\n!", 2, 0..3),
         ];
 
         assert_eq!(result, expected.join("\n"));

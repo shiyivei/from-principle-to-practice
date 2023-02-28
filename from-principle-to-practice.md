@@ -4266,6 +4266,147 @@ Default trait 用于为类型提供缺省值。它也可以通过 derive 宏 #[d
 
 trait 是行为的延迟绑定。我们可以在不知道具体要处理什么数据结构的前提下，先通过 trait 把系统的很多行为约定好。这也是为什么开头解释标准 trait 时，频繁用到了“约定……行为”
 
+### 3.5.3 泛型参数使用场景
+
+**使用泛型参数延迟数据结构的绑定**
+
+```
+/// Service 数据结构
+pub struct Service<Store = MemTable> { //指定了缺省值，使用时可以不提供泛型参数，直接使用缺省值，但也可以指定
+    inner: Arc<ServiceInner<Store>>,
+}
+```
+
+**使用泛型参数和幽灵数据（PhantomData）提供额外类型**
+
+PhantomData，声明数据结构中不直接使用，但在实现过程中需要用到的类型。它被广泛用在处理，数据结构定义过程中不需要，但是在实现过程中需要的泛型参数
+
+```
+use std::marker::PhantomData;
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct Identifier<T> {
+    inner: u64,
+    _tag: PhantomData<T>,
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct User {
+    id: Identifier<Self>,
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct Product {
+    id: Identifier<Self>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn id_should_not_be_the_same() {
+        let user = User::default();
+        let product = Product::default();
+
+        // 两个 id 不能比较，因为他们属于不同的类型
+        // assert_ne!(user.id, product.id);
+
+        assert_eq!(user.id.inner, product.id.inner);
+    }
+}
+```
+
+使用泛型参数让同一个数据结构对同一个 trait 可以拥有不同的实现。
+
+**使用泛型参数来提供多个实现**
+
+```
+
+use std::marker::PhantomData;
+
+#[derive(Debug, Default)]
+pub struct Equation<IterMethod> {
+    current: u32,
+    _method: PhantomData<IterMethod>,
+}
+
+// 线性增长
+#[derive(Debug, Default)]
+pub struct Linear;
+
+// 二次增长
+#[derive(Debug, Default)]
+pub struct Quadratic;
+
+impl Iterator for Equation<Linear> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current += 1;
+        if self.current >= u32::MAX {
+            return None;
+        }
+
+        Some(self.current)
+    }
+}
+
+impl Iterator for Equation<Quadratic> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current += 1;
+        if self.current >= u16::MAX as u32 {
+            return None;
+        }
+
+        Some(self.current * self.current)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_linear() {
+        let mut equation = Equation::<Linear>::default();
+        assert_eq!(Some(1), equation.next());
+        assert_eq!(Some(2), equation.next());
+        assert_eq!(Some(3), equation.next());
+    }
+
+    #[test]
+    fn test_quadratic() {
+        let mut equation = Equation::<Quadratic>::default();
+        assert_eq!(Some(1), equation.next());
+        assert_eq!(Some(4), equation.next());
+        assert_eq!(Some(9), equation.next());
+    }
+}
+```
+
+**高级用法**
+
+如果想要实现返回值中带泛型参数，不能用impl trait，但是可以用 trait object
+
+```
+
+pub trait Storage {
+    ...
+    /// 遍历 HashTable，返回 kv pair 的 Iterator
+    fn get_iter(&self, table: &str) -> 
+        Result<Box<dyn Iterator<Item = Kvpair>>, KvError>;
+}
+```
+
+但是使用 trait Object 是有代价的，除了有一次额外的堆分配之外，还有动态分配会带来一定的性能损失
+
+**如何处理复杂的泛型参数**
+
+
+
 ## 3.6 Rust语言编程范式
 
 Rust支持面向对象语言的一些特性，也支持函数式语言的特性。函数式style：
