@@ -1,8 +1,0 @@
-/Users/qinjianquan/Career/rust/from-principle-to-practice/src/grep/target/debug/deps/thiserror-26fdc60a4b70e673.rmeta: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/aserror.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/display.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/provide.rs
-
-/Users/qinjianquan/Career/rust/from-principle-to-practice/src/grep/target/debug/deps/thiserror-26fdc60a4b70e673.d: /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/lib.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/aserror.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/display.rs /Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/provide.rs
-
-/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/lib.rs:
-/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/aserror.rs:
-/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/display.rs:
-/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/thiserror-1.0.38/src/provide.rs:
