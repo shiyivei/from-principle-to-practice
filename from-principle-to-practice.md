@@ -3689,7 +3689,21 @@ Any是Rust中仅有的一种自省机制，相当于反射机制。因为rust是
 
 TypeId是全局唯一，当程序重新启动会发生变化
 
-trait 对象：也是一组方法的集合
+trait 对象：也是一组方法的集合。当我们在运行时想让某个具体类型，只表现出某个 trait 的行为，可以通过将其赋值给一个 dyn T，无论是 &dyn T，还是 Box，还是 Arc，都可以，这里，T 是当前数据类型实现的某个 trait。此时，原有的类型被抹去，Rust 会创建一个 trait object，并为其分配满足该 trait 的 vtable 
+
+![img](https://static001.geekbang.org/resource/image/49/1d/4900097edab0yye11233e14ef857be1d.jpg?wh=2248x1370)
+
+在编译 dyn T 时，Rust 会为使用了 trait object 类型的 trait 实现，生成相应的 vtable，放在可执行文件中（一般在 TEXT 或 RODATA 段）：
+
+![img](https://static001.geekbang.org/resource/image/9d/5e/9ddeafee9740e891f6bf9c1584e6905e.jpg?wh=2389x1738)
+
+这样，当 trait object 调用 trait 的方法时，它会先从 vptr 中找到对应的 vtable，进而找到对应的方法来执行。
+
+使用 trait object 的好处是，当在某个上下文中需要满足某个 trait 的类型，且这样的类型可能有很多，当前上下文无法确定会得到哪一个类型时，我们可以用 trait object 来统一处理行为。和泛型参数一样，trait object 也是一种延迟绑定，它让决策可以延迟到运行时，从而得到最大的灵活性
+
+trait object 把决策延迟到运行时，带来的后果是执行效率的打折。在 Rust 里，函数或者方法的执行就是一次跳转指令，而 trait object 方法的执行还多一步，它涉及额外的内存访问，才能得到要跳转的位置再进行跳转，执行的效率要低一些
+
+此外，如果要把 trait object 作为返回值返回，或者要在线程间传递 trait object，都免不了使用 Box 或者 Arc，会带来额外的堆分配的开销
 
 ```
 &dyn Trait or Box<dyn Trait> 
@@ -4265,6 +4279,71 @@ Default trait 用于为类型提供缺省值。它也可以通过 derive 宏 #[d
 ![img](https://static001.geekbang.org/resource/image/c4/5e/c40e3efef2bec9140c95054547958a5e.jpg?wh=2743x1765)
 
 trait 是行为的延迟绑定。我们可以在不知道具体要处理什么数据结构的前提下，先通过 trait 把系统的很多行为约定好。这也是为什么开头解释标准 trait 时，频繁用到了“约定……行为”
+
+#### 3.5.2.9 Trait 对象使用场景
+
+1. 在函数中使用
+2. 在返回值中使用
+3. 在数据结构中使用
+
+```
+pub struct HandshakeState {
+    pub(crate) rng:              Box<dyn Random>,
+    pub(crate) symmetricstate:   SymmetricState,
+    pub(crate) cipherstates:     CipherStates,
+    pub(crate) s:                Toggle<Box<dyn Dh>>,
+    pub(crate) e:                Toggle<Box<dyn Dh>>,
+    pub(crate) fixed_ephemeral:  bool,
+    pub(crate) rs:               Toggle<[u8; MAXDHLEN]>,
+    pub(crate) re:               Toggle<[u8; MAXDHLEN]>,
+    pub(crate) initiator:        bool,
+    pub(crate) params:           NoiseParams,
+    pub(crate) psks:             [Option<[u8; PSKLEN]>; 10],
+    #[cfg(feature = "hfs")]
+    pub(crate) kem:              Option<Box<dyn Kem>>,
+    #[cfg(feature = "hfs")]
+    pub(crate) kem_re:           Option<[u8; MAXKEMPUBLEN]>,
+    pub(crate) my_turn:          bool,
+    pub(crate) message_patterns: MessagePatterns,
+    pub(crate) pattern_position: usize,
+}
+```
+
+注意：当你在使用一个类型使用了很多约束时，如
+
+```
+pub struct HandShakeState<A,B,C,D>
+where
+		A:Add,
+		B:Borrow,
+		C:Copy,
+		D:Drop
+		{}
+```
+
+此时使用该类型会非常麻烦，倒不如使用 如下形式更方便，适量牺牲一点性能是可取的
+
+```
+type HandShakeStateAlias = dyn Add + Borrow + Copy + Drop； 
+```
+
+4. trait object 在闭包中的使用
+
+```
+pub struct Input<'a, T> {
+    prompt: String,
+    default: Option<T>,
+    show_default: bool,
+    initial_text: Option<String>,
+    theme: &'a dyn Theme,
+    permit_empty: bool,
+    validator: Option<Box<dyn FnMut(&T) -> Option<String> + 'a>>,
+    #[cfg(feature = "history")]
+    history: Option<&'a mut dyn History<T>>,
+}
+```
+
+
 
 ### 3.5.3 泛型参数使用场景
 
