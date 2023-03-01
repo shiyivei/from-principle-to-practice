@@ -13,6 +13,9 @@ bytes = "1" # 高效处理网络 buffer 的库
 dashmap = "5.4.0"
 http = "0.2.9"
 prost = "0.8" # 处理 protobuf 的代码
+serde ={version = "1.0.152",features = ["derive"]}
+sled = "0.34.7"
+tempfile = "3.4.0"
 thiserror = "1.0.38"
 tracing = "0.1" # 日志处理
 

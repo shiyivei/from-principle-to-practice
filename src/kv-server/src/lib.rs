@@ -14,4 +14,4 @@ mod service;
 mod storage;
 pub use error::KvError;
 pub use pb::abi::*;
-pub use storage::Storage;
+pub use storage::*;

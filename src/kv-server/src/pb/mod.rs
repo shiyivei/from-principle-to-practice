@@ -1,8 +1,11 @@
 pub mod abi;
-use http::StatusCode;
+use std::fmt::Error;
 
 use crate::KvError;
 use abi::{command_request::RequestData, *};
+
+use bytes::Bytes;
+use http::StatusCode;
 
 impl CommandRequest {
     /// 创建 HGET 命令,代表了一种可以转为字String的类型
@@ -106,5 +109,109 @@ impl From<KvError> for CommandResponse {
         }
 
         result
+    }
+}
+
+impl From<Vec<Value>> for CommandResponse {
+    fn from(v: Vec<Value>) -> Self {
+        Self {
+            status: StatusCode::OK.as_u16() as _,
+            values: v,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<bool> for Value {
+    fn from(b: bool) -> Self {
+        Self {
+            value: Some(value::Value::Bool(b)),
+        }
+    }
+}
+
+impl From<f64> for Value {
+    fn from(f: f64) -> Self {
+        Self {
+            value: Some(value::Value::Float(f)),
+        }
+    }
+}
+
+impl TryFrom<Value> for i64 {
+    type Error = KvError;
+
+    fn try_from(v: Value) -> Result<Self, Self::Error> {
+        match v.value {
+            Some(value::Value::Integer(i)) => Ok(i),
+            _ => Err(KvError::ConvertError(v, "Integer")),
+        }
+    }
+}
+
+impl TryFrom<Value> for f64 {
+    type Error = KvError;
+
+    fn try_from(v: Value) -> Result<Self, Self::Error> {
+        match v.value {
+            Some(value::Value::Float(f)) => Ok(f),
+            _ => Err(KvError::ConvertError(v, "Float")),
+        }
+    }
+}
+
+impl TryFrom<Value> for Bytes {
+    type Error = KvError;
+
+    fn try_from(v: Value) -> Result<Self, Self::Error> {
+        match v.value {
+            Some(value::Value::Binary(b)) => Ok(b),
+            _ => Err(KvError::ConvertError(v, "Binary")),
+        }
+    }
+}
+
+impl TryFrom<Value> for bool {
+    type Error = KvError;
+
+    fn try_from(v: Value) -> Result<Self, Self::Error> {
+        match v.value {
+            Some(value::Value::Bool(b)) => Ok(b),
+            _ => Err(KvError::ConvertError(v, "Boolean")),
+        }
+    }
+}
+
+impl TryFrom<Value> for Vec<u8> {
+    type Error = KvError;
+    fn try_from(v: Value) -> Result<Self, Self::Error> {
+        let mut buf = Vec::with_capacity(v.encoded_len());
+        v.encode(&mut buf)?;
+        Ok(buf)
+    }
+}
+
+impl TryFrom<&[u8]> for Value {
+    type Error = KvError;
+
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        let msg = Value::decode(data)?;
+        Ok(msg)
+    }
+}
+
+impl Value {
+    pub fn encode(&self, buf: &mut Vec<u8>) -> Result<Vec<u8>, KvError> {
+        Ok(Vec::<u8>::new())
+    }
+
+    pub fn decode(data: &[u8]) -> Result<Value, KvError> {
+        Ok(Value {
+            value: Some(value::Value::Bool(true)),
+        })
+    }
+
+    pub fn encoded_len(&self) -> usize {
+        10_usize
     }
 }

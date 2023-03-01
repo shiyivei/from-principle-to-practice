@@ -4,6 +4,7 @@
 
 // crate代表当前 lib
 use crate::storage::MemTable;
+use crate::storage::SledDb;
 use crate::{KvError, Kvpair, Value};
 
 // 定义一个 Storage 约束所有对Storage的操作行为,增删改查
@@ -43,23 +44,28 @@ where
 // 单元测试写在 实现之前，是标准的TDD(Test-Driven Deployment)
 mod tests {
 
+    use tempfile::tempdir;
+
     use super::*;
 
     #[test]
-    fn memtable_basic_interface_should_work() {
-        let store = MemTable::new();
-        test_basi_interface(store)
+    fn sleddb_basic_interface_should_work() {
+        let dir = tempdir().unwrap();
+        let store = SledDb::new(dir);
+        test_basi_interface(store);
     }
 
     #[test]
-    fn mem_get_all_should_work() {
-        let store = MemTable::new();
-        test_get_all(store)
+    fn sleddb_get_all_should_work() {
+        let dir = tempdir().unwrap();
+        let store = SledDb::new(dir);
+        test_get_all(store);
     }
 
     #[test]
-    fn memtable_iter_should_work() {
-        let store = MemTable::new();
+    fn sleddb_iter_should_work() {
+        let dir = tempdir().unwrap();
+        let store = SledDb::new(dir);
         test_get_iter(store);
     }
 

@@ -5388,12 +5388,17 @@ tracing = "0.1.37" # 日志和追踪
 tracing-subscriber = "0.3.16" # 日志和追踪
 async-prost = "0.2.1" # 支持把 protobuf 封装成 TCP frame
 futures = "0.3" # 提供 Stream trait
+sled #kv store
 ```
 
 ```
 [build-dependencies]
 prost-build = "0.11.6" # 编译 protobuf	
 ```
+
+![img](https://static001.geekbang.org/resource/image/3b/34/3be68a0fdf78da0da404dbecc2b44a34.jpg?wh=2364x1447)
+
+![img](https://static001.geekbang.org/resource/image/c6/76/c6dc3e46aff978cbaa4038760b407776.jpg?wh=2364x1447)
 
 # 8 Rust 实战
 

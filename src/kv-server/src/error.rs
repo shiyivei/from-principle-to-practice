@@ -1,6 +1,7 @@
 // 使用thiserror定义自己的错误类型,用Error宏,新的Error是枚举，包含了所有可能的错误
 // 注意用法
 use crate::Value;
+use std::fmt::Error as StdError;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
@@ -22,4 +23,10 @@ pub enum KvError {
     DecodeError(#[from] prost::DecodeError),
     #[error("Internal error: {0}")]
     Internal(String),
+}
+
+impl From<StdError> for KvError {
+    fn from(value: StdError) -> Self {
+        KvError::InvalidCommand("Invalid Commmad".to_string())
+    }
 }
