@@ -36,6 +36,12 @@ mod tests {
         test_get_all(store)
     }
 
+    #[test]
+    fn memtable_iter_should_work() {
+        let store = MemTable::new();
+        test_get_iter(store);
+    }
+
     // 如果测试函数中内容太多的话，需要收敛到新的函数中
     // 测试驱动开发
     fn test_basi_interface(store: impl Storage) {

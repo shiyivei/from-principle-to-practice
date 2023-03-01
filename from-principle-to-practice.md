@@ -1416,6 +1416,10 @@ fn main() {
 释放内存：当没有对象再引用一个对象时，Rust 会释放该对象占用的内存。这样，指向该对象的指针将不再指向有效的内存空间
 ```
 
+### 2.6.4 prelude
+
+From/Into/Vec/Println！/vec！TryIntoTry/TryInto/TryFrom/FromIterator
+
 ## 2.7 类型的行为
 
 ### 2.7.1 trait
@@ -3536,6 +3540,8 @@ fn name<T: Animal>(animal: T) -> &'static str;
 
 ### 3.5.1 trait
 
+软件开发的整个行为，基本上可以说是不断创建和迭代接口，然后在这些接口上进行实现的过程。它们就像Rust语言标准库中trait一样
+
 ![image-20230207152113795](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230207152113795.png)
 
 接口也是一种多态
@@ -4343,8 +4349,6 @@ pub struct Input<'a, T> {
 }
 ```
 
-
-
 ### 3.5.3 泛型参数使用场景
 
 **使用泛型参数延迟数据结构的绑定**
@@ -4484,7 +4488,73 @@ pub trait Storage {
 
 **如何处理复杂的泛型参数**
 
+### 3.5.4 如何围绕Trait来设计架构
 
+1. 定义好用易用，语义简介明了trait的（可以先写一些测试代码在写trait实现代码）
+2. 使用trait做桥接
+
+```
+// 比如我们想要通过API获取朋友圈的内容，一般的API可能会像下面这样
+let secret_api = api_with_user_token(&user, params);
+let data: Vec<Status> = reqwest::get(secret_api)?.json()?;
+```
+
+更好的方式，用trait来屏蔽实现细节，这样，我们的业务逻辑代码可以围绕着这个接口展开，而无需关心它具体的实现是来自 REST API，还是其它什么地方；也不用关心实现做没做 cache、有没有重传机制、具体都会返回什么样的错误（FriendCircleError 就已经提供了所有的出错可能）等等
+
+```
+pub trait FriendCircle {
+    fn get_published(&self, user: &User) -> Result<Vec<Status>, FriendCircleError>;
+    ... 
+}
+```
+
+3. 控制反转
+
+通过使用 trait，我们可以在设计底层库的时候告诉上层：我需要某个满足 trait X 的数据，因为我依赖这个数据实现的 trait X 方法来完成某些功能，但这个数据具体怎么实现，我不知道，也不关心，我只关系trait X 方法处理后的结果类型
+
+```
+pub trait Engine {
+    // 生成一个新的 engine
+    fn create<T>(data: T) -> Result<Self>
+    where
+        Self: Sized,
+        T: TryInto<Self>,
+    {
+        data.try_into()
+            .map_err(|_| anyhow!("failed to create engine"))
+    }
+    ...
+}
+```
+
+控制反转能够让调用者和被调用者之间的关系在某个时刻调转过来，被调用者反过来调用调用者提供的能力，二者协同完成一些事情
+
+4. 用 trait 实现 SOLID 原则
+
+SRP：单一职责原则，是指每个模块应该只负责单一的功能，不应该让多个功能耦合在一起，而是应该将其组合在一起。
+
+OCP：开闭原则，是指软件系统应该对修改关闭，而对扩展开放。
+
+```
+#[async_trait]
+pub trait Fetch {
+    type Error;
+    async fn fetch(&self) -> Result<String, Self::Error>;
+}
+
+pub trait Load {
+    type Error;
+    fn load(self) -> Result<DataSet, Self::Error>;
+}
+```
+
+LSP：里氏替换原则，是指如果组件可替换，那么这些可替换的组件应该遵守相同的约束，或者说接口。
+
+ISP：接口隔离原则，是指使用者只需要知道他们感兴趣的方法，而不该被迫了解和使用对他们来说无用的方法或者功能。
+
+在 Rust 中，有些 trait 的接口可能会比较庞杂，此时，如果我们想减轻调用者的负担，让它们能够在需要的时候才引入某些接口，可以使用 trait 的继承。比如 AsyncRead / AsyncWrite / Stream 和它们对应的 AsyncReadExt / AsyncWriteExt / StreamExt 等。这样，复杂的接口被不同的 trait 分担了并隔离开
+
+DIP：依赖反转原则，是指某些场合下底层代码应该依赖高层代码，而非高层代码去依赖底层代码。
 
 ## 3.6 Rust语言编程范式
 
