@@ -6,17 +6,20 @@ use std::{
     sync::{atomic::AtomicUsize, Arc, Condvar, Mutex},
 };
 
+// 定义类型
 pub struct Shared<T> {
-    queue: Mutex<VecDeque<T>>,
-    available: Condvar,
+    queue: Mutex<VecDeque<T>>, // 这个队列可以自动扩容
+    available: Condvar,        // 这个里面有通知方法
     senders: AtomicUsize,
     receivers: AtomicUsize,
 }
 
+// 不管是锁还是channel，其实都是算sender的成员
 pub struct Sender<T> {
     shared: Arc<Shared<T>>,
 }
 
+// drop 就减1 一版情况下不用手动drop
 impl<T> Drop for Sender<T> {
     fn drop(&mut self) {
         self.shared
@@ -36,8 +39,8 @@ impl<T> Sender<T> {
         }
 
         let was_empty = {
-            let mut inner = self.shared.queue.lock().unwrap();
-            let empty = inner.is_empty();
+            let mut inner = self.shared.queue.lock().unwrap(); // 队列使用了Mutex锁,所以有lock方法
+            let empty = inner.is_empty(); // 一系列的操作
             inner.push_back(t);
 
             empty
@@ -53,12 +56,13 @@ impl<T> Sender<T> {
     pub fn total_receivers(&self) -> usize {
         self.shared
             .receivers
-            .load(std::sync::atomic::Ordering::SeqCst)
+            .load(std::sync::atomic::Ordering::SeqCst) // 读
     }
 
     pub fn total_senders(&self) -> usize {
-        let queue = self.shared.queue.lock().unwrap();
-        queue.len()
+        self.shared
+            .senders
+            .load(std::sync::atomic::Ordering::SeqCst) // 读
     }
     pub fn total_queued_items(&self) -> usize {
         let queue = self.shared.queue.lock().unwrap();
@@ -194,67 +198,67 @@ mod tests {
     }
 
     // 测试三： receiver 会在线程位空时阻塞
-    //     #[test]
-    //     fn receiver_should_be_locked_when_nothing_to_read() {
-    //         let (mut s, mut r) = unbounded();
-    //         let mut s1 = s.clone();
+    #[test]
+    fn receiver_should_be_locked_when_nothing_to_read() {
+        let (mut s, mut r) = unbounded();
+        let mut s1 = s.clone();
 
-    //         thread::spawn(move || {
-    //             for (dx, i) in r.into_iter().enumerate() {
-    //                 assert_eq!(dx, i)
-    //             }
-    //             assert!(false)
-    //         });
+        thread::spawn(move || {
+            for (dx, i) in r.into_iter().enumerate() {
+                assert_eq!(dx, i)
+            }
+            assert!(false)
+        });
 
-    //         thread::spawn(move || {
-    //             for i in 0..100usize {
-    //                 s.send(i).unwrap();
-    //             }
-    //         });
+        thread::spawn(move || {
+            for i in 0..100usize {
+                s.send(i).unwrap();
+            }
+        });
 
-    //         thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(1));
 
-    //         assert_eq!(s1.total_queued_items(), 0)
-    //     }
+        assert_eq!(s1.total_queued_items(), 0)
+    }
 
     // 队列为空时阻塞，使用 condvar
 
     // 测试四：最后一个sender退出时发出错误
-    //     #[test]
-    //     fn last_sender_drop_should_error_when_receive() {
-    //         let (mut s, mut r) = unbounded();
-    //         let mut s1 = s.clone();
+    #[test]
+    fn last_sender_drop_should_error_when_receive() {
+        let (mut s, mut r) = unbounded();
+        let mut s1 = s.clone();
 
-    //         let senders = [s, s1];
-    //         let total = senders.len();
+        let senders = [s, s1];
+        let total = senders.len();
 
-    //         for mut sender in senders {
-    //             thread::spawn(move || {
-    //                 sender.send("hello").unwrap();
-    //             })
-    //             .join()
-    //             .unwrap();
-    //         }
+        for mut sender in senders {
+            thread::spawn(move || {
+                sender.send("hello").unwrap();
+            })
+            .join()
+            .unwrap();
+        }
 
-    //         for _ in 0..total {
-    //             r.recv().unwrap();
-    //         }
+        for _ in 0..total {
+            r.recv().unwrap();
+        }
 
-    //         assert!(r.recv().is_err());
-    //     }
+        assert!(r.recv().is_err());
+    }
 
     // 测试五：没有receiver也报错
-    //     #[test]
-    //     fn receiver_drop_should_error_when_send() {
-    //         let (mut s1, mut s2) = {
-    //             let (s, _) = unbounded();
-    //             let s1 = s.clone();
-    //             let s2 = s.clone();
+    #[test]
+    fn receiver_drop_should_error_when_send() {
+        let (mut s1, mut s2) = {
+            let (s, _) = unbounded();
+            let s1 = s.clone();
+            let s2 = s.clone();
 
-    //             (s1, s2)
-    //         };
+            (s1, s2)
+        };
 
-    //         assert!(s1.send(1).is_err());
-    //         assert!(s2.send(2).is_err());
-    //     }
+        assert!(s1.send(1).is_err());
+        assert!(s2.send(2).is_err());
+    }
 }
