@@ -1,0 +1,3 @@
+cargo:rerun-if-changed=build/main.rs
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/qinjianquan/Career/rust/from-principle-to-practice/src/web-service/target/debug/build/typenum-ad1a833debe025f8/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/qinjianquan/Career/rust/from-principle-to-practice/src/web-service/target/debug/build/typenum-ad1a833debe025f8/out/op.rs

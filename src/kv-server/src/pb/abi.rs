@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 /// 来自客户端的命令请求
 #[derive(PartialOrd, Clone, PartialEq, ::prost::Message)]
 pub struct CommandRequest {
@@ -78,7 +77,6 @@ pub struct Value {
 }
 /// Nested message and enum types in `Value`.
 pub mod value {
-
     #[derive(PartialOrd, Clone, PartialEq, ::prost::Oneof)]
     pub enum Value {
         #[prost(string, tag = "1")]

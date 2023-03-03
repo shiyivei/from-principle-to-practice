@@ -737,15 +737,14 @@ println!("{:?}", std::mem::size_of::<B>());
 ```
 Type                        T    Option<T>    Result<T, io::Error>
 ----------------------------------------------------------------
-u8                          1        2           24
-f64                         8       16           24
-&u8                         8        8           24
-Box<u8>                     8        8           24
-&[u8]                      16       16           24
-String                     24       24           32
-Vec<u8>                    24       24           32
-HashMap<String, String>    48       48           56
-E                          56       56           64
+u8                          1        2           16
+f64                         8       16           16
+&u8                         8        8           16
+Box<u8>                     8        8           16
+&[u8]                      16       16           16
+String                     24       24           24
+Vec<u8>                    24       24           24
+HashMap<String, String>    48       48           48
 ```
 
 对于 Option 结构而言，它的 tag 只有两种情况：0 或 1， tag 为 0 时，表示 None，tag 为 1 时，表示 Some。tag占1个字节。64位CPU对对齐时8字节
@@ -1494,7 +1493,7 @@ Rust类型系统遵循的是仿射类型理论，即系统中用于标识内存�
 
 6. trait 分类
 
-![image-20230201230453241](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230201230453241.png)
+![image-20230201230453241](/Users/qinjianquan/Career/rust/image/4.1.png)
 
 ## 2.8 函数与闭包
 
@@ -1580,7 +1579,7 @@ enum Color {
 // fn Color::G(_1: i32) -> Color {/* */}
 // fn Color::B(_1: i32) -> Color {/* */}
 
-// 5.单元结构体
+// 5.元组结构体
 struct UintStruct(i32, i32);
 
 // 等价于
@@ -3250,11 +3249,19 @@ fn main() {
 
 这也是 Rust 处理很多问题的思路：编译时，处理大部分使用场景，保证安全性和效率；运行时，处理无法在编译时处理的场景，会牺牲一部分效率，提高灵活性。后续讲到静态分发和动态分发也会有体现，这个思路很值得我们借鉴
 
-## 3.4 线程安全：线程和并发
+## 3.4 并发编程
 
 Mutex 是互斥量，获得互斥量的线程对数据独占访问，RwLock 是读写锁，获得写锁的线程对数据独占访问，但当没有写锁的时候，允许有多个读锁。读写锁的规则和 Rust 的借用规则非常类似
 
 很多拥有高并发处理能力的编程语言，会在用户程序中嵌入一个 M:N 的调度器，把 M 个并发任务，合理地分配在 N 个 CPU core 上并行运行，让程序的吞吐量达到最大。
+
+在处理并发的过程中，难点并不在于如何创建多个线程来分配工作，在于如何在这些并发的任务中进行同步。我们来看并发状态下几种常见的工作模式：自由竞争模式、map/reduce 模式、DAG 模式
+
+![img](https://static001.geekbang.org/resource/image/00/58/003294c9ba4b291e47585fa1a599a358.jpg?wh=2364x1142)
+
+在自由竞争的基础上，我们可以限制并发的同步模式，典型的有 map/reduce 模式和 DAG 模式。map/reduce 模式，把工作打散，按照相同的处理完成后，再按照一定的顺序将结果组织起来；DAG 模式，把工作切成不相交的、有依赖关系的子任务，然后按依赖关系并发执行
+
+上述场景组合起来，可以处理很多业务场景，应该先厘清其脉络，用分治的思想把问题拆解成正交的子问题，然后组合合适的并发模式来处理这些子问题
 
 ### 3.4.1 本地线程
 
@@ -3494,6 +3501,79 @@ pub enum Ordering {
 ABA问题
 
 可以关注的库
+
+### 3.4.5 常用的并发原语
+
+有五个概念 Atomic、Mutex、Condvar、Channel 和 Actor model。Atomic和Mutex在前面已经讲过了。
+
+Condvar常常和Mutex一起使用：Mutex 用于保证条件在读写时互斥，Condvar 用于控制线程的等待和唤醒
+
+Channel 用来处理并发任务之间的通讯，Channel 把锁封装在了队列写入和读取的小块区域内，然后把读者和写者完全分离，使得读者读取数据和写者写入数据，对开发者而言，除了潜在的上下文切换外，完全和锁无关，就像访问一个本地队列一样。所以，对于大部分并发问题，我们都可以用 Channel 或者类似的思想来处理（比如 actor model）
+
+Channel 在具体实现的时候，根据不同的使用场景，会选择不同的工具。Rust 提供了以下四种 Channel：oneshot：这可能是最简单的 Channel，写者就只发一次数据，而读者也只读一次。这种一次性的、多个线程间的同步可以用 oneshot channel 完成。由于 oneshot 特殊的用途，实现的时候可以直接用 atomic swap 来完成。rendezvous：很多时候，我们只需要通过 Channel 来控制线程间的同步，并不需要发送数据。rendezvous channel 是 channel size 为 0 的一种特殊情况。这种情况下，我们用 Mutex + Condvar 实现就足够了，在具体实现中，rendezvous channel 其实也就是 Mutex + Condvar 的一个包装。bounded：bounded channel 有一个队列，但队列有上限。一旦队列被写满了，写者也需要被挂起等待。当阻塞发生后，读者一旦读取数据，channel 内部就会使用 Condvar 的 notify_one 通知写者，唤醒某个写者使其能够继续写入
+
+因此，实现中，一般会用到 Mutex + Condvar + VecDeque 来实现；如果不用 Condvar，可以直接使用 thread::park + thread::notify 来完成（flume 的做法）；如果不用 VecDeque，也可以使用双向链表或者其它的 ring buffer 的实现。unbounded：queue 没有上限，如果写满了，就自动扩容。我们知道，Rust 的很多数据结构如 Vec 、VecDeque 都是自动扩容的。unbounded 和 bounded 相比，除了不阻塞写者，其它实现都很类似。所有这些 channel 类型，同步和异步的实现思路大同小异，主要的区别在于挂起 / 唤醒的对象。在同步的世界里，挂起 / 唤醒的对象是线程；而异步的世界里，是粒度很小的 task
+
+![img](https://static001.geekbang.org/resource/image/a4/61/a4372f4dd810ced7a99f54d50695cc61.jpg?wh=2364x1610)
+
+Actor：它在业界主要的使用者是 Erlang VM 以及 akka。actor 是一种有栈协程。每个 actor，有自己的一个独立的、轻量级的调用栈，以及一个用来接受消息的消息队列（mailbox 或者 message queue），外界跟 actor 打交道的唯一手段就是，给它发送消息。Rust 标准库没有 actor 的实现，但是社区里有比较成熟的 actix（大名鼎鼎的 actix-web 就是基于 actix 实现的），以及 bastion
+
+```
+
+use actix::prelude::*;
+use anyhow::Result;
+
+// actor 可以处理的消息
+#[derive(Message, Debug, Clone, PartialEq)]
+#[rtype(result = "OutMsg")]
+enum InMsg {
+    Add((usize, usize)),
+    Concat((String, String)),
+}
+
+#[derive(MessageResponse, Debug, Clone, PartialEq)]
+enum OutMsg {
+    Num(usize),
+    Str(String),
+}
+
+// Actor
+struct DummyActor;
+
+impl Actor for DummyActor {
+    type Context = Context<Self>;
+}
+
+// 实现处理 InMsg 的 Handler trait
+impl Handler<InMsg> for DummyActor {
+    type Result = OutMsg; // <-  返回的消息
+
+    fn handle(&mut self, msg: InMsg, _ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            InMsg::Add((a, b)) => OutMsg::Num(a + b),
+            InMsg::Concat((mut s1, s2)) => {
+                s1.push_str(&s2);
+                OutMsg::Str(s1)
+            }
+        }
+    }
+}
+
+#[actix::main]
+async fn main() -> Result<()> {
+    let addr = DummyActor.start();
+    let res = addr.send(InMsg::Add((21, 21))).await?;
+    let res1 = addr
+        .send(InMsg::Concat(("hello, ".into(), "world".into())))
+        .await?;
+
+    println!("res: {:?}, res1: {:?}", res, res1);
+
+    Ok(())
+}
+```
+
+一点小结学完这前后两讲，我们小结一下各种并发原语的使用场景 Atomic、Mutex、RwLock、Semaphore、Condvar、Channel、Actor。Atomic 在处理简单的原生类型时非常有用，如果你可以通过 AtomicXXX 结构进行同步，那么它们是最好的选择。当你的数据结构无法简单通过 AtomicXXX 进行同步，但你又的确需要在多个线程中共享数据，那么 Mutex / RwLock 可以是一种选择。不过，你需要考虑锁的粒度，粒度太大的 Mutex / RwLock 效率很低。如果你有 N 份资源可以供多个并发任务竞争使用，那么，Semaphore 是一个很好的选择。比如你要做一个 DB 连接池。当你需要在并发任务中通知、协作时，Condvar 提供了最基本的通知机制，而 Channel 把这个通知机制进一步广泛扩展开，于是你可以用 Condvar 进行点对点的同步，用 Channel 做一对多、多对一、多对多的同步。所以，当我们做大部分复杂的系统设计时，Channel 往往是最有力的武器，除了可以让数据穿梭于各个线程、各个异步任务间，它的接口还可以很优雅地跟 stream 适配。如果说在做整个后端的系统架构时，我们着眼的是：有哪些服务、服务和服务之间如何通讯、数据如何流动、服务和服务间如何同步；那么在做某一个服务的架构时，着眼的是有哪些功能性的线程（异步任务）、它们之间的接口是什么样子、数据如何流动、如何同步。在这里，Channel 兼具接口、同步和数据流三种功能，所以我说是最有力的武器。然而它不该是唯一的武器。我们面临的真实世界的并发问题是多样的，解决方案也应该是多样的，计算机科学家们在过去的几十年里不断探索，构建了一系列的并发原语，也说明了很难有一种银弹解决所有问题。就连 Mutex 本身，在实现中，还会根据不同的场景做不同的妥协（比如做 faireness 的妥协），因为这个世界就是这样，鱼与熊掌不可兼得，没有完美的解决方案，只有妥协出来的解决方案。所以 Channel 不是银弹，actor model 不是银弹，lock 不是银弹。一门好的编程语言，可以提供大部分场景下的最佳实践（如 Erlang/Golang），但不该营造一种气氛，只有某个最佳实践才是唯一方案。我很喜欢 Erlang 的 actor model 和 Golang
 
 ## 3.5 trait 和泛型
 
@@ -4968,6 +5048,238 @@ safe rust构建于unsafe rust之上，凭什么safe？
 
 NonNull 协变
 
+### 3.9.5 Unsafe rust使用场景
+
+1. 实现 unsafe trait，主要是 Send / Sync 这两个 trait 
+
+```
+pub unsafe auto trait Send {}
+pub unsafe auto trait Sync {}
+```
+
+绝大多数数据结构都实现了 Send / Sync，但有一些例外，比如 Rc / RefCell / 裸指针等
+
+Send / Sync 是 auto trait，所以大部分情况下，不需要实现 Send / Sync，然而，在数据结构里使用裸指针时，因为裸指针是没有实现 Send/Sync 的，连带着你的数据结构也就没有实现 Send/Sync。但很可能结构是线程安全的,所以也需要它线程安全
+
+此时，如果你可以保证它能在线程中安全地移动，那可以实现 Send；如果可以保证它能在线程中安全地共享，也可以去实现 Sync。之前我们讨论过的 Bytes 就在使用裸指针的情况下实现了 Send / Sync
+
+```
+pub struct Bytes {
+    ptr: *const u8,
+    len: usize,
+    // inlined "trait object"
+    data: AtomicPtr<()>,
+    vtable: &'static Vtable,
+}
+
+// Vtable must enforce this behavior
+unsafe impl Send for Bytes {}
+unsafe impl Sync for Bytes {}
+```
+
+unsafe 代表告知编译器，我保证内存安全 但是unsafe fn 是对调用者的约束
+
+```
+
+// 实现这个 trait 的开发者要保证实现是内存安全的
+unsafe trait Foo {
+    fn foo(&self);
+}
+
+trait Bar {
+    // 调用这个函数的人要保证调用是安全的
+    unsafe fn bar(&self);
+}
+
+struct Nonsense;
+
+unsafe impl Foo for Nonsense {
+    fn foo(&self) {
+        println!("foo!");
+    }
+}
+
+impl Bar for Nonsense {
+    unsafe fn bar(&self) {
+        println!("bar!");
+    }
+}
+
+fn main() {
+    let nonsense = Nonsense;
+    // 调用者无需关心 safety
+    nonsense.foo();
+
+    // 调用者需要为 safety 负责
+    unsafe { nonsense.bar() };
+}
+```
+
+```
+
+use std::alloc::{GlobalAlloc, Layout, System};
+
+struct MyAllocator;
+
+unsafe impl GlobalAlloc for MyAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let data = System.alloc(layout);
+        eprintln!("ALLOC: {:p}, size {}", data, layout.size());
+        data
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        System.dealloc(ptr, layout);
+        eprintln!("FREE: {:p}, size {}", ptr, layout.size());
+    }
+}
+
+#[global_allocator]
+static GLOBAL: MyAllocator = MyAllocator;
+```
+
+2. 调用已有的 unsafe 接口
+
+```
+
+use std::collections::HashMap;
+
+fn main() {
+    let map = HashMap::new();
+    let mut map = explain("empty", map);
+
+    map.insert(String::from("a"), 1);
+    explain("added 1", map);
+}
+
+// HashMap 结构有两个 u64 的 RandomState，然后是四个 usize，
+// 分别是 bucket_mask, ctrl, growth_left 和 items
+// 我们 transmute 打印之后，再 transmute 回去
+fn explain<K, V>(name: &str, map: HashMap<K, V>) -> HashMap<K, V> {
+    let arr: [usize; 6] = unsafe { std::mem::transmute(map) };
+    println!(
+        "{}: bucket_mask 0x{:x}, ctrl 0x{:x}, growth_left: {}, items: {}",
+        name, arr[2], arr[3], arr[4], arr[5]
+    );
+
+    // 因为 std:mem::transmute 是一个 unsafe 函数，所以我们需要 unsafe
+    unsafe { std::mem::transmute(arr) }
+}
+```
+
+3. 对裸指针做解引用
+
+很多时候，如果需要进行一些特殊处理，我们会把得到的数据结构转换成裸指针，比如刚才的 Bytes。裸指针在生成的时候无需 unsafe，因为它并没有内存不安全的操作，但裸指针的解引用操作是不安全的，潜在有风险，它也需要使用 unsafe 来明确告诉编译器，以及代码的阅读者，也就是说要使用 unsafe block 包裹起来
+
+```
+
+fn main() {
+    let mut age = 18;
+
+    // 不可变指针
+    let r1 = &age as *const i32;
+    // 可变指针
+    let r2 = &mut age as *mut i32;
+
+    // 使用裸指针，可以绕过 immutable / mutable borrow rule
+
+    // 然而，对指针解引用需要使用 unsafe
+    unsafe {
+        println!("r1: {}, r2: {}", *r1, *r2);
+    }
+}
+
+fn immutable_mutable_cant_coexist() {
+    let mut age = 18;
+    let r1 = &age;
+    // 编译错误
+    let r2 = &mut age;
+
+    println!("r1: {}, r2: {}", *r1, *r2);
+}
+```
+
+使用裸指针，可变指针和不可变指针可以共存，不像可变引用和不可变引用无法共存。这是因为裸指针的任何对内存的操作，无论是 ptr::read / ptr::write，还是解引用，都是 unsafe 的操作，所以只要读写内存，裸指针的使用者就需要对内存安全负责。你也许会觉得奇怪，这里也没有内存不安全的操作啊，为啥需要 unsafe 呢？是的，虽然在这个例子里，裸指针来源于一个可信的内存地址，所有的代码都是安全的，但是，下面的代码就是不安全的，会导致 segment fault
+
+```
+fn main() {
+    // 裸指针指向一个有问题的地址
+    let r1 = 0xdeadbeef as *mut u32;
+
+    println!("so far so good!");
+
+    unsafe {
+        // 程序崩溃
+        *r1 += 1;
+        println!("r1: {}", *r1);
+    }
+
+```
+
+4. 以及使用 FFI
+
+当 Rust 要使用其它语言的能力时，Rust 编译器并不能保证那些语言具备内存安全，所以和第三方语言交互的接口，一律要使用 unsafe，比如，我们调用 libc 来进行 C 语言开发者熟知的 malloc/free
+
+不推荐的使用 unsafe 的场景以上是我们可以使用 unsafe 的场景。还有一些情况可以使用 unsafe，但是，我并不推荐。比如处理未初始化数据、访问可变静态变量、使用 unsafe 提升性能
+
+任何需要 static mut 的地方，都可以用 AtomicXXX / Mutex / RwLock 来取代
+
+```
+
+use std::{
+    sync::atomic::{AtomicUsize, Ordering},
+    thread,
+};
+
+static COUNTER: AtomicUsize = AtomicUsize::new(1);
+
+fn main() {
+    let t1 = thread::spawn(move || {
+        COUNTER.fetch_add(10, Ordering::SeqCst);
+    });
+
+    let t2 = thread::spawn(move || {
+        COUNTER
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| Some(v * 10))
+            .unwrap();
+    });
+
+    t2.join().unwrap();
+    t1.join().unwrap();
+
+    println!("COUNTER: {}", COUNTER.load(Ordering::Relaxed));
+}
+```
+
+一个unsafe案例
+
+```
+
+fn main() {
+    let mut s = "我爱你！中国".to_string();
+    let r = s.as_mut();
+
+    if let Some((s1, s2)) = split(r, '！') {
+        println!("s1: {}, s2: {}", s1, s2);
+    }
+}
+
+fn split(s: &str, sep: char) -> Option<(&str, &str)> {
+    let pos = s.find(sep);
+
+    pos.map(|pos| {
+        let len = s.len();
+        let sep_len = sep.len_utf8();
+
+        // SAFETY: pos 是 find 得到的，它位于字符的边界处，同样 pos + sep_len 也是如此
+        // 所以以下代码是安全的
+        unsafe { (s.get_unchecked(0..pos), s.get_unchecked(pos + sep_len..len)) }
+    })
+}
+```
+
+![img](https://static001.geekbang.org/resource/image/6b/e4/6b62ecc6dd3e34a529ca6d7fdccafce4.jpg?wh=2269x1289)
+
 # 4 异步编程
 
 ![image-20230219105157056](/Users/qinjianquan/Library/Application Support/typora-user-images/image-20230219105157056.png)
@@ -5389,6 +5701,7 @@ tracing-subscriber = "0.3.16" # 日志和追踪
 async-prost = "0.2.1" # 支持把 protobuf 封装成 TCP frame
 futures = "0.3" # 提供 Stream trait
 sled #kv store
+rocket #rustweb信息处理库，类似于python的Django
 ```
 
 ```
@@ -5407,3 +5720,242 @@ prost-build = "0.11.6" # 编译 protobuf
 ![img](https://static001.geekbang.org/resource/image/f0/e9/f0c1ab58fbe1e97f8938f01ca97c3ae9.jpg?wh=1920x653)
 
 Rust 标准库的 From/ TryFrom trait 即是服务于此目的，方便开发者编写出易于阅读、容易测试、维护简单的代码
+
+# 9 Rust Web开发
+
+## 9.1 ISO/OSI七层模型
+
+![img](https://static001.geekbang.org/resource/image/90/ef/909ec0f611352fyy5b99f27bb2f557ef.jpg?wh=2315x1468)
+
+
+七层模型中，链路层和网络层一般构建在操作系统之中，我们并不需要直接触及，而表现层和应用层关系紧密，所以在实现过程中，大部分应用程序只关心网络层、传输层和应用层
+
+网络层目前 IPv4 和 IPv6 分庭抗礼，IPv6 还未完全对 IPv4 取而代之；传输层除了对延迟非常敏感的应用（比如游戏），绝大多数应用都使用 TCP；而在应用层，对用户友好，且对防火墙友好的 HTTP 协议家族：HTTP、WebSocket、HTTP/2，以及尚处在草案之中的 HTTP/3，在漫长的进化中，脱颖而出，成为应用程序主流的选择
+
+## 9.2 Rust生态对网络协议的支持
+
+![img](https://static001.geekbang.org/resource/image/8f/78/8ff212b28a88d697303a5fcd35174d78.jpg?wh=2463x1504)
+
+## 9.3 Rust标准库 std::net
+
+Rust 标准库提供了 std::net，封装了整个 TCP/IP 协议栈。但std::net 是同步的，tokio::net 提供了和 std::net 几乎一致的封装，但是是异步的，适合构建高性能的异步网络
+
+```
+TCP：TcpListener / TcpStream，处理服务器的监听以及客户端的连接
+UDP：UdpSocket，处理 UDP socket
+其它：IpAddr 是 IPv4 和 IPv6 地址的封装；SocketAddr，表示 IP 地址 + 端口的数据结构
+```
+
+### 9.3.1 TCP 处理
+
+loop + spawn 是处理网络连接的基本方式
+
+```
+use std::{
+    io::{Read, Write},
+    net::TcpListener,
+    thread,
+};
+
+// 一个tcp server
+
+fn main() {
+    // 在传输层监听信息流
+    let listener = TcpListener::bind("0.0.0.0:9527").unwrap();
+    println!("Start listen on: {}", listener);
+
+    loop {
+        // 接收信息流
+        let (mut tcp_stream, addr) = listener.accept().unwrap();
+        println!("Accepted a new connection: {}", addr);
+
+        // 使用多线程处理
+        thread::spawn(move || {
+            // 建立一个缓存,是一个u8数组
+            let mut buf = [0u8; 12];
+            // 把信息流读到缓存中
+            tcp_stream.read_exact(&mut buf).unwrap();
+            println!("data: {:?}", buf);
+            let result = String::from_utf8_lossy(&buf);
+            match result {
+                std::borrow::Cow::Borrowed(value) => println!("a borrow value: {}", value),
+                std::borrow::Cow::Owned(value) => println!("a owned value: {}", value),
+            }
+
+            // b 接字符串表示后面是一个字节序列
+            tcp_stream.write_all(b"glad to see you!").unwrap();
+
+            println!("data: {:?}", buf);
+        });
+    }
+}
+```
+
+处理频繁链接和推出网络连接，有两个问题，一是效率而是线程间共享数据很烦
+
+**如何处理大量链接？**
+
+当线程连接数过高，就容易把系统中可用的线程资源吃光。此外，线程的调度是操作系统完成的，每次调度都要经历一个复杂的、不那么高效的 save and load 的上下文切换过程，所以如果使用线程，那么，在遭遇到 C10K 的瓶颈，也就是连接数到万这个级别，系统就会遭遇到资源和算力的双重瓶颈。
+
+从资源的角度，过多的线程占用过多的内存，Rust 缺省的栈大小是 2M，10k 连接就会占用 20G 内存（当然缺省栈大小也可以根据需要修改）；从算力的角度，太多线程在连接数据到达时，会来来回回切换线程，导致 CPU 过分忙碌，无法处理更多的连接请求。所以，对于潜在的有大量连接的网络服务，使用线程不是一个好的方式
+
+如果要突破 C10K 的瓶颈，达到 C10M，我们就只能使用在用户态的协程来处理，要么是类似 Erlang/Golang 那样的有栈协程（stackful coroutine），要么是类似 Rust 异步处理这样的无栈协程（stackless coroutine）
+
+在 Rust 下大部分处理网络相关的代码中，你会看到，很少直接有用 std::net 进行处理的，大部分都是用某个异步网络运行时，比如 tokio
+
+**如何处理共享信息？**
+
+我们总会有一些共享的状态供所有的连接使用，比如数据库连接。对于这样的场景，如果共享数据不需要修改，我们可以考虑使用 Arc，如果需要修改，可以使用 Arc>
+
+但使用锁，就意味着一旦在关键路径上需要访问被锁住的资源，整个系统的吞吐量都会受到很大的影响。一种思路是，我们把锁的粒度降低，这样冲突就会减少。比如在 kv server 中，我们把 key 哈希一下模 N，将不同的 key 分摊到 N 个 memory store 中，这样，锁的粒度就降低到之前的 1/N 了
+
+另一种思路是我们改变共享资源的访问方式，使其只被一个特定的线程访问；其它线程或者协程只能通过给其发消息的方式与之交互。如果你用 Erlang / Golang，这种方式你应该不陌生，在 Rust 下，可以使用 channel 数据结构
+
+Rust 下 channel，无论是标准库，还是第三方库，都有非常棒的的实现。同步 channel 的有标准库的 mpsc:channel 和第三方的 crossbeam_channel，异步 channel 有 tokio 下的 mpsc:channel，以及 flume
+
+**处理网络数据的一般方法？**
+
+我们再来看看如何处理网络数据。大部分时候，我们可以使用已有的应用层协议来处理网络数据，比如 HTTP
+
+在 HTTP 协议下，基本上使用 JSON 构建 REST API / JSON API 是业界的共识，客户端和服务器也有足够好的生态系统来支持这样的处理。你只需要使用 serde 让你定义的 Rust 数据结构具备 Serialize/Deserialize 的能力，然后用 serde_json 生成序列化后的 JSON 数据
+
+```
+[package]
+name = "crate-pre"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = "0.4.11"
+serde ={version ="1.0.152",features = ["derive"]}
+tokio = "1.26.0"
+url = "2.3.1"
+
+```
+
+```
+#[macro_use]
+extern crate rocket;
+
+use rocket::serde::json::Json;
+use rocket::serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+struct Hello {
+    name: String,
+}
+
+#[get("/", format = "json")]
+fn hello() -> Json<Hello> {
+    Json(Hello { name: "Tyr".into() })
+}
+
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/", routes![hello])
+}
+```
+
+如果你出于性能或者其他原因，可能需要定义自己的客户端 / 服务器间的协议，那么，可以使用传统的 TLV（Type-Length-Value）来描述协议数据，或者使用更加高效简洁的 protobuf
+
+**使用 protobuf 自定义协议**
+
+因为 protobuf 生成的是不定长消息，所以你需要在客户端和服务器之间约定好，如何界定一个消息帧（frame）
+
+常用的界定消息帧的方法有在消息尾添加 “\r\n”，以及在消息头添加长度
+
+消息尾添加 “\r\n” 一般用于基于文本的协议，比如 HTTP 头 / POP3 / Redis 的 RESP 协议等。但对于二进制协议，更好的方式是在消息前面添加固定的长度，比如对于 protobuf 这样的二进制而言，消息中的数据可能正好出现连续的"\r\n"，如果使用 “\r\n” 作为消息的边界，就会发生紊乱，所以不可取
+
+gRPC 使用了五个字节的 Length-Prefixed-Message，其中包含一个字节的压缩标志和四个字节的消息长度。这样，在处理 gRPC 消息时，我们先读取 5 个字节，取出其中的长度 N，再读取 N 个字节就得到一个完整的消息了
+
+所以我们也可以采用这样的方法来处理使用 protobuf 自定义的协议
+
+tokio 提供了 length_delimited codec，来处理用长度隔离的消息帧，它可以和 Framed 结构配合使用
+
+比如消息有一个固定的消息头，其中包含 3 字节长度，5 字节其它内容，LengthDelimitedCodec 处理完后，会把完整的数据给你。你也可以通过 num_skip(3) 把长度丢弃，总之非常灵活
+
+```
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let stream = TcpStream::connect("127.0.0.1:9527").await?;
+    let mut stream = Framed::new(stream, LengthDelimitedCodec::new());
+    stream
+        .send(Bytes::from("hello yivei, how are you?"))
+        .await?;
+
+    // 接收从服务器返回的数据
+    if let Some(Ok(data)) = stream.next().await {
+        println!("Got: {:?}", String::from_utf8_lossy(&data));
+    }
+
+    Ok(())
+}
+```
+
+在 *nix 操作系统层面，一个 TcpStream 背后就是一个文件描述符。
+
+值得注意的是，当我们在处理网络应用的时候，有些问题一定要正视：
+
+网络是不可靠的
+
+网络的延迟可能会非常大
+
+带宽是有限的
+
+网络是非常不安全的
+
+**解决方案**
+
+```
+我们可以使用 TCP 以及构建在 TCP 之上的协议应对网络的不可靠；
+使用队列和超时来应对网络的延时；
+使用精简的二进制结构、压缩算法以及某些技巧（比如 HTTP 的 304）来减少带宽的使用，以及不必要的网络传输；
+最后，需要使用 TLS 或者 noise protocol 这样的安全协议来保护传输中的数据
+```
+
+## 9.4 通讯模型
+
+### 9.4.1 双向通讯
+
+![img](https://static001.geekbang.org/resource/image/fb/c0/fbe99846847d7d495685eb7bd62889c0.jpg?wh=2463x1007)
+
+一旦连接建立，服务器和客户端都可以根据需要主动向对方发起传输。整个网络运行在全双工模式下（full duplex）。我们熟悉的 TCP / WebSocket 就运行在这种模型下。双向通讯这种方式的好处是，数据的流向是没有限制的，一端不必等待另一端才能发送数据，网络可以进行比较实时地处理。
+
+### 9.4.2 请求响应
+
+请求 - 响应模型是我们最熟悉的模型。客户端发送请求，服务器根据请求返回响应。整个网络处在半双工模式下（half duplex）。HTTP/1.x 就运行在这种模式下。一般而言，请求响应模式下，在客户端没有发起请求时，服务器不会也无法主动向客户端发送数据。除此之外，请求发送的顺序和响应返回的顺序是一一对应的，不会也不能乱序，这种处理方式会导致应用层的队头阻塞
+
+### 9.4.3 控制平面 / 数据平面分离
+
+但有时候，服务器和客户端之间会进行复杂的通讯，这些通讯包含控制信令和数据流。因为 TCP 有天然的网络层的队头阻塞，所以当控制信令和数据交杂在同一个连接中时，过大的数据流会阻塞控制信令，使其延迟加大，无法及时响应一些重要的命令。以 FTP 为例，如果用户在传输一个 1G 的文件后，再进行 ls 命令，如果文件传输和 ls 命令都在同一个连接中进行，那么，只有文件传输结束，用户才会看到 ls 命令的结果，这样显然对用户非常不友好。所以，我们会采用控制平面和数据平面分离的方式，进行网络处理。客户端会首先连接服务器，建立控制连接，控制连接是一个长连接，会一直存在，直到交互终止。然后，二者会根据需要额外创建新的临时的数据连接，用于传输大容量的数据，数据连接在完成相应的工作后，会自动关闭
+
+除 FTP 外，还有很多协议都是类似的处理方式，比如多媒体通讯协议SIP 协议
+
+HTTP/2 和借鉴了 HTTP/2 的用于多路复用的 Yamux 协议，虽然运行在同一个 TCP 连接之上，它们在应用层也构建了类似的控制平面和数据平面。以 HTTP/2 为例，控制平面（ctrl stream）可以创建很多新的 stream，用于并行处理多个应用层的请求，比如使用 HTTP/2 的 gRPC，各个请求可以并行处理，不同 stream 之间的数据可以乱序返回，而不必受请求响应模型的限制。虽然 HTTP/2 依旧受困于 TCP 层的队头阻塞，但它解决了应用层的队头阻塞
+
+### 9.4.5 P2P 网络
+
+角色对等
+
+**如何构建 P2P 网络**
+
+由于历史上 IPv4 地址的缺乏，以及对隐私和网络安全的担忧，互联网的运营商在接入端，大量使用了 NAT 设备，使得普通的网络用户，缺乏直接可以访问的公网 IP。因而，构建一个 P2P 网络首先需要解决网络的连通性。
+
+主流的解决方法是，P2P 网络的每个节点，都会首先会通过 **STUN 服务器探索自己的公网 IP/port**，然后在 bootstrap/signaling server 上注册自己的公网 IP/port，让别人能发现自己，从而和潜在的“邻居”建立连接
+
+在一个大型的 P2P 网络中，一个节点常常会拥有几十个邻居，通过这些邻居以及邻居掌握的网络信息，每个节点都能构建一张如何找到某个节点（某个数据）的路由表。在此之上，节点还可以加入某个或者某些 topic，然后通过某些协议（比如 gossip）在整个 topic 下扩散消息
+
+![img](https://static001.geekbang.org/resource/image/ef/74/ef8f35f961d4771729a18f69becd4274.jpg?wh=3199x1803)P2P 网络的构建，一般要比客户端 / 服务器网络复杂，因为节点间的连接要承载很多协议：节点发现（mDNS、bootstrap、Kad DHT）、节点路由（Kad DHT）、内容发现（pubsub、Kad DHT)以及应用层协议。同时，连接的安全性受到的挑战也和之前不同
+
+所以我们会看到，P2P 协议的连接，往往在一个 TCP 连接中，使用类似 yamux 的多路复用协议来承载很多其他协议：
+
+![img](https://static001.geekbang.org/resource/image/76/f3/765b2b7f05986c87dfa524ff9f5980f3.jpg?wh=2463x1007)
+
+在网络安全方面，TLS 虽然能很好地保护客户端 / 服务器模型，然而证书的创建、发放以及信任对 P2P 网络是个问题，所以 P2P 网络倾向于使用自己的安全协议，或者使用 noise protocol，来构建安全等级可以媲美 TLS 1.3 的安全协议
+
+**Rust 如何处理 P2P 网络**
+
