@@ -30,6 +30,7 @@ impl<T> Drop for Sender<T> {
 
 pub struct Receiver<T> {
     shared: Arc<Shared<T>>,
+    cache: VecDeque<T>,
 }
 
 impl<T> Sender<T> {
@@ -99,6 +100,7 @@ pub fn unbounded<T>() -> (Sender<T>, Receiver<T>) {
         },
         Receiver {
             shared: shared.clone(),
+            cache: VecDeque::with_capacity(INITIAL_SIZE),
         },
     )
 }
@@ -117,10 +119,22 @@ impl<T> Default for Shared<T> {
 
 impl<T> Receiver<T> {
     pub fn recv(&mut self) -> Result<T> {
+        if let Some(v) = self.cache.pop_front() {
+            return Ok(v);
+        }
+
+        // 拿到队列的锁
         let mut inner = self.shared.queue.lock().unwrap();
+
         loop {
             match inner.pop_front() {
-                Some(t) => return Ok(t),
+                Some(t) => {
+                    if !inner.is_empty() {
+                        std::mem::swap(&mut self.cache, &mut inner);
+                    }
+                    return Ok(t);
+                }
+
                 None => {
                     if self.total_senders() == 0 {
                         return Err(anyhow!("no sender left"));
@@ -155,6 +169,7 @@ impl<T> Drop for Receiver<T> {
 mod tests {
 
     use super::*;
+    use std::ops::Deref;
     use std::thread;
     use std::time::Duration;
 
@@ -260,5 +275,41 @@ mod tests {
 
         assert!(s1.send(1).is_err());
         assert!(s2.send(2).is_err());
+    }
+
+    #[test]
+    fn receiver_shall_be_notified_when_all_senders_exit() {
+        let (s, mut r) = unbounded::<usize>();
+
+        let (mut sender, mut receiver) = unbounded::<usize>();
+
+        let t1 = thread::spawn(move || {
+            receiver.recv().unwrap();
+
+            drop(s)
+        });
+
+        t1.join().unwrap();
+    }
+
+    #[test]
+    fn channel_fast_path_should_work() {
+        let (mut s, mut r) = unbounded();
+        for i in 0..10usize {
+            s.send(i).unwrap();
+        }
+
+        assert!(r.cache.is_empty());
+        // 读取一个数据，此时应该会导致 swap，cache 中有数据
+        assert_eq!(0, r.recv().unwrap());
+        // 还有 9 个数据在 cache 中
+        assert_eq!(r.cache.len(), 9);
+        // 在 queue 里没有数据了
+        assert_eq!(s.total_queued_items(), 0);
+
+        // 从 cache 里读取剩下的数据
+        for (idx, i) in r.into_iter().take(9).enumerate() {
+            assert_eq!(idx + 1, i);
+        }
     }
 }

@@ -21,6 +21,7 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind(addr).await?;
 
     info!("Start listening on {}", addr);
+    println!("Connecting to {}", addr);
 
     let table: Arc<DashMap<String, Value>> = Arc::new(DashMap::new());
 

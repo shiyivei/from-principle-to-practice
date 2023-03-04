@@ -15,6 +15,8 @@ pub enum KvError {
     ConvertError(Value, &'static str),
     #[error("Cannot process command {0} with table: {1}, key: {2}. Error: {}")]
     StorageError(&'static str, String, String, String),
+    #[error("frame error")]
+    FrameError,
 
     //使用第三发库的具体Error类型
     #[error("Failed to encode protobuf message")]

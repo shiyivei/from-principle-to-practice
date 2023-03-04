@@ -299,8 +299,7 @@ trait StarkFamily {
 ### 使用trait对象重载函数
 
 ```
-
- // 不能将trait中的方法为相同的类型做不同实现
+    // 不能将trait中的方法为相同的类型做不同实现
     // 一个能实现此目标的方案
 
     trait Blanket<T> {
@@ -346,10 +345,13 @@ trait StarkFamily {
             "as_ref"
         }
     }
-    ```
+
+```
+
 ### trait 对象与 Self：Sized
-    ```
-     // trait 中有默认实现时
+
+```
+    // trait 中有默认实现时
     // 并且默认实现的函数体中包含Self
     trait WithConstructor {
         fn build(param: usize) -> Self
@@ -382,7 +384,7 @@ trait StarkFamily {
     let a = &A;
     a.t()
 
-    ```
+
      trait Test {
         fn foo(&self);
 
@@ -420,13 +422,13 @@ trait StarkFamily {
     // concrete.fails();
     concrete.works();
 
-    ```
+```
 
-    ### trait object 三种应用场景
+### trait object 三种应用场景
 
-    ```
 
-    use std::future::Future;
+```
+use std::future::Future;
 use std::pin::Pin;
 use std::{fmt::Write, io::Read, marker::PhantomData};
 
@@ -604,8 +606,7 @@ pub struct Input<'a, T> {
     history: Option<&'a mut dyn History<T>>,
 }
 
-    ```
-
+```
 */
 
 pub fn trait_object() {}
