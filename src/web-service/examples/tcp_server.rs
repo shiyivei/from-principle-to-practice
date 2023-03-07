@@ -20,6 +20,8 @@ fn main() {
         thread::spawn(move || {
             // 建立一个缓存,是一个u8数组
             let mut buf = [0u8; 12];
+            // let mut buf = Vec::new();
+
             // 把信息流读到缓存中
             tcp_stream.read_exact(&mut buf).unwrap();
             println!("data: {:?}", buf);

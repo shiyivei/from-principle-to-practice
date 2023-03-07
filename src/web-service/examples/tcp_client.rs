@@ -9,6 +9,7 @@ fn main() {
     tcp_stream.write_all(b"hello yivei!").unwrap();
 
     let mut buf = [0u8; 15];
+    // let mut buf = Vec::new();
 
     tcp_stream.read_exact(&mut buf).unwrap();
     println!("{:?}", String::from_utf8_lossy(&buf));

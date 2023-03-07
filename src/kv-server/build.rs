@@ -1,6 +1,7 @@
 use std::process::Command;
 
 fn main() {
+    // 创建配置文件
     let mut config = prost_build::Config::new();
 
     config.bytes(&["."]);

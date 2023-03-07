@@ -1,27 +1,12 @@
-use std::collections::HashMap;
-use std::str::from_utf8;
-use std::sync::{Arc, Condvar, Mutex};
+//! 容器 Vec<T>
+//!
 
-use std::thread;
-use std::time::Duration;
+/**
 
-use futures::future::Map;
-use std::cell::Cell;
-use std::cell::RefCell;
-use std::pin::Pin;
+### Vec<T>
 
-// 枚举描述了一种情况下的所有可能
-// 如IP地址种类可能包含IPV6和IPV4
-enum IpAddrKind {
-    V4,
-    V6,
-}
-
-// 枚举值的访问
-
-fn main() {
+```
     // 一 Vec原理
-
     // pub struct Vec<T, A: Allocator = Global> {
     //     buf: RawVec<T, A>,
     //     len: usize,
@@ -69,4 +54,7 @@ fn main() {
     assert!(vec.capacity() == 3);
 
     println!("address of vec :{:?}", vec.as_ptr()); // 0x600003af8070
-}
+
+```
+*/
+pub fn collections() {}
