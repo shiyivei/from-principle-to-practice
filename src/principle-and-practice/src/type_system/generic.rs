@@ -7,6 +7,7 @@
     x
 }
 fn main() {
+       use std::fmt::Error;
     // 泛型数据库引擎，并对泛型进一步使用trait约束
     // 它意味着只有实现了 Operation trait 的数据库才能放入数据库引擎中
     pub struct DBEngine<T: Operation>(T);
