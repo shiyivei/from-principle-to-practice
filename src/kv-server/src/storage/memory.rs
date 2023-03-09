@@ -1,7 +1,6 @@
+use super::StorageIter;
 use crate::{KvError, Kvpair, Storage, Value};
 use dashmap::{mapref::one::Ref, DashMap};
-
-use super::storage::StorageIter;
 
 #[derive(Debug, Clone, Default)]
 pub struct MemTable {

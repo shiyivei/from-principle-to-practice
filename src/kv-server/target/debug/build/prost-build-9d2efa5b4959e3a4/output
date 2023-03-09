@@ -1,0 +1,4 @@
+cargo:rustc-env=PROTOC=/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/prost-build-0.8.0/third-party/protobuf/protoc-osx-x86_64
+cargo:rustc-env=PROTOC_INCLUDE=/Users/qinjianquan/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/prost-build-0.8.0/third-party/protobuf/include
+cargo:rerun-if-env-changed=PROTOC
+cargo:rerun-if-env-changed=PROTOC_INCLUDE
