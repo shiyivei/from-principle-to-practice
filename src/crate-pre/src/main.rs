@@ -58,4 +58,13 @@ fn main() {
 
     foo_1(1);
     foo_2("2");
+
+    let x = 45;
+
+    let y = 45;
+
+    let z = x & !y;
+
+    println!("sum: {:?}", z);
+    assert_eq!(true | false, true);
 }

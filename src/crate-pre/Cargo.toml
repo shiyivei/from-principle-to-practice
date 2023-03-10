@@ -16,6 +16,9 @@ lazy_static = "1.4.0"
 mysql = "23.0.1"
 postgres = "0.19.4"
 redis = "0.22.3"
+serde = {version ="1.0.154",features = ["derive"]}
+serde_json = "1.0.94"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.6", features = ["codec"] }
 v = "0.1.0"
+rand = "0.8.4"
