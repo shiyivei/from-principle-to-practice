@@ -1,5 +1,7 @@
+// 响应器
 use super::*;
 
+// reactor包含一个epoll，只是对epoll接口调用的一个封装
 pub struct Reactor {
     epoll: Epoll,
     wakers: Mutex<HashMap<RawFd, Waker>>,
@@ -42,5 +44,3 @@ pub fn reactor_main_loop() -> io::Result<()> {
         }
     }
 }
-
-// 截止到epoll
