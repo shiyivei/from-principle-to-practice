@@ -2,74 +2,75 @@
 //!
 /**
  ###
-```
-  // 迭代器trait
-    trait Iterator {
-        type Item;
+``
+// 1 标准库中的trait
+    // pub trait Iterator {
+    //     type Item;
+    //     fn next(&mut self) -> Option<Self::Item>;
+    //     //  + 74 methods
+    // }
 
-        fn next(&mut self) -> Option<Self::Item>;
+    // pub trait IntoIterator {
+    //     type Item;
+    //     type IntoIter: Iterator<Item = Self::Item>;
+
+    //     fn into_iter(self) -> Self::IntoIter;
+    // }
+
+    // 特别说明：for 循环以及解糖
+
+    let values = vec![1, 2, 3, 4, 5];
+    // 使用 for 循环遍历集合中个每个元素
+    for x in values {
+        println!("{x}");
     }
 
-    // 外部迭代器语法糖for循环，相当于迭代器的next方法
-    // Vec实现了迭代器trait
+    // for 循环解糖后等价如下：
     let v = vec![1, 2, 3, 4, 5];
-    {
-        // 使用into_iter方法获得迭代器
-        let mut _iterator = v.into_iter();
-        loop {
-            // match 匹配每一次的迭代结果
-            match _iterator.next() {
-                Some(i) => {
-                    println!("{}", i);
-                }
-                None => break,
-            }
+
+    // 先将集合转为外部迭代器
+    let mut v_iter = v.into_iter();
+
+    // 在 loop 循环中使用next方法循环获取集合中下一个元素，当集合中取不到值时使用break终止 loop循环
+    loop {
+        match v_iter.next() {
+            Some(x) => println!("{}", x),
+            None => break,
         }
     }
 
-    // 使用for循环遍历
+    // 2 迭代器的使用
+
+    let map = HashMap::from([("rust", 1), ("go", 2), ("python", 3)]);
+    let map_iter = map.into_iter();
+    let vec: Vec<(&str, i32)> = map_iter.collect();
+    println!("{:?}", vec); // [("rust", 1), ("go", 2), ("python", 3)]
+
+    // 3 迭代器、借用和所有权
+    let mut v = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let iter_mut: IterMut<i32> = v.iter_mut(); // 转为  IterMut 结构体, 可变借用
+    let iter: Iter<i32> = v.iter(); // 转为 Iter 结构体， 不可变借用
+    let iter_into: IntoIter<i32> = v.into_iter(); // 转为 IntoIter 结构体 ， 获取所有权
+
+    // 4 迭代器适配器
+    let vec = vec![1, 2, 3, 4, 5];
+    let doubled: Vec<i32> = vec
+        .iter()
+        .map(|&x| x * 3)
+        .take(3)
+        .filter(|x| *x > 6)
+        .collect();
+    println!("{:?}", doubled); // [9]
+
+    // 5 迭代器与迭代器适配器特性：lazy（惰性）
+
     let v = vec![1, 2, 3, 4, 5];
-    for i in 0..v.len() {
-        println!("{}", v[i]);
+    v.iter().for_each(|x| println!("{x}"));
+    // or
+    for x in &v {
+        println!("{x}");
     }
 
-    // 自定义的内部迭代器（不是主要的模式）
-    trait InIterator<T: Copy> {
-        // 指定约束是为了把闭包作为参数传递
-        fn each<F: Fn(T) -> T>(&mut self, f: F);
-    }
-
-    impl<T: Copy> InIterator<T> for Vec<T> {
-        fn each<F: Fn(T) -> T>(&mut self, f: F) {
-            let mut i = 0;
-            while i < self.len() {
-                self[i] = f(self[i]);
-                i += 1;
-            }
-
-            // 等价于
-            // for i in 0..self.len() {
-            //     self[i] = f(self[i]);
-            // }
-        }
-    }
-
-    let mut v = vec![1, 2, 3];
-    v.each(|i| i * 3);
-    assert_eq!([3, 6, 9], &v[..3])
-
-    // laziness
-    let v = vec![1, 2, 3, 4, 5];
-    // 未迭代
-    // 边迭代,边使用map处理
-    v.iter().map(|x| println!("{x}"));
-
-    let num = 1..10;
-    // let three = num.take(3); // 迭代三个
-    // 收集时开始迭代
-    let three: Vec<i32> = num.take(3).collect(); // 迭代三个
-
-    // 迭代器适配器有很多
 
 ```
 */

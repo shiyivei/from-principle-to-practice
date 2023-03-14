@@ -1,117 +1,73 @@
-use std::fmt::Error;
+use std::{collections::HashMap, slice::Iter, slice::IterMut};
+
+use std::vec::IntoIter;
 
 fn main() {
-    // 泛型数据库引擎，并对泛型进一步使用trait约束
-    // 它意味着只有实现了 Operation trait 的数据库才能放入数据库引擎中
-    pub struct DBEngine<T: Operation>(T);
+    // 1 标准库中的trait
+    // pub trait Iterator {
+    //     type Item;
+    //     fn next(&mut self) -> Option<Self::Item>;
+    //     //  + 74 methods
+    // }
 
-    pub struct MySQL;
-    pub struct Redis;
-    pub struct MongoDB;
+    // pub trait IntoIterator {
+    //     type Item;
+    //     type IntoIter: Iterator<Item = Self::Item>;
 
-    pub trait Operation {
-        fn insert(table: &str, key: &str, value: &str) {
-            // todo!
-        }
-        fn del(table: &str) -> Result<(), Error> {
-            // todo!
+    //     fn into_iter(self) -> Self::IntoIter;
+    // }
 
-            Ok(())
-        }
-        fn updade(table: &str) -> Result<(), Error> {
-            // todo!
-            Ok(())
-        }
+    // 特别说明：for 循环以及解糖
 
-        // 生命周期参数
-        fn query<'a>(table: &'a str, key: &'a str) -> Result<&'a str, Error> {
-            // todo!
-            Ok("")
-        }
+    let values = vec![1, 2, 3, 4, 5];
+    // 使用 for 循环遍历集合中个每个元素
+    for x in values {
+        println!("{x}");
     }
 
-    impl Operation for MySQL {} // 实现trait
-    impl Operation for Redis {} // 实现trait
+    // for 循环解糖后等价如下：
+    let v = vec![1, 2, 3, 4, 5];
 
-    // 业务场景一
-    let mysql = DBEngine(MySQL); // 可以作为DBEngine的数据库
-                                 // 业务场景二
-    let redis = DBEngine(Redis); // 可以作为DBEngine的数据库
-                                 // 业务场景三
-                                 // let mongodb = DBEngine(MongoDB); // 不可以，因为MongDB 未实现 Operation trait
+    // 先将集合转为外部迭代器
+    let mut v_iter = v.into_iter();
 
-    // 泛型函数
-    fn foo<T>(x: T) -> T {
-        x
-    }
-
-    assert_eq!(foo(1), 1);
-    assert_eq!(foo("hello"), "hello");
-
-    // 上述的函数会单态化为两个不同参数类型的函数，如下：
-    fn foo_1(x: i32) -> i32 {
-        x
-    }
-    fn foo_2(x: &'static str) -> &'static str {
-        x
-    }
-
-    foo_1(1);
-    foo_2("2");
-
-    let x = 45;
-
-    let y = 45;
-
-    let z = x & !y;
-
-    println!("sum: {:?}", z);
-    assert_eq!(true | false, true);
-
-    // 1 函数参数
-
-    //定义函数
-
-    fn rust_func1<T>(a: u32, b: bool, c: Option<T>) {
-        todo!()
-    }
-    fn rust_func2<T>(a: u32, b: bool, c: Option<T>) -> Result<(), Error> {
-        todo!();
-        Ok(())
-    }
-
-    // 调用函数
-    rust_func1(10u32, true, Option::<i32>::None);
-    let res = rust_func2(10u32, true, Some(42));
-
-    // 2 函数种类
-
-    struct A(i32, i32);
-    impl A {
-        // 2.关联函数
-        fn sum(x: i32, y: i32) -> i32 {
-            x + y
-        }
-
-        // 3.方法
-        fn math(&self) -> i32 {
-            Self::sum(self.0, self.1) // 关联函数调用使用比目鱼符号
-        }
-
-        // 关联函数
-        fn function_item(x: i32) -> i32 {
-            x
+    // 在 loop 循环中使用next方法循环获取集合中下一个元素，当集合中取不到值时使用break终止 loop循环
+    loop {
+        match v_iter.next() {
+            Some(x) => println!("{}", x),
+            None => break,
         }
     }
 
-    // 调用
-    let a = A(1, 2);
-    let x = a.math(); // 调用方法用点 .
-    let y = A::sum(1, 3); // 调用关联函数用路径符号 ::
+    // 2 迭代器的使用
 
-    // 函数项类型
-    let add = A::sum;
-    let add_math = A::math;
+    let map = HashMap::from([("rust", 1), ("go", 2), ("python", 3)]);
+    let map_iter = map.into_iter();
+    let vec: Vec<(&str, i32)> = map_iter.collect();
+    println!("{:?}", vec); // [("rust", 1), ("go", 2), ("python", 3)]
 
-    // 函数项类型的本质是0大小,会在类型中记录函数信息，好处是可以优化函数调用，其他的0大小类型的构造器还有枚举体哈单元结构体
+    // 3 迭代器、借用和所有权
+    let mut v = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let iter_mut: IterMut<i32> = v.iter_mut(); // 转为  IterMut 结构体, 可变借用
+    let iter: Iter<i32> = v.iter(); // 转为 Iter 结构体， 不可变借用
+    let iter_into: IntoIter<i32> = v.into_iter(); // 转为 IntoIter 结构体 ， 获取所有权
+
+    // 4 迭代器适配器
+    let vec = vec![1, 2, 3, 4, 5];
+    let doubled: Vec<i32> = vec
+        .iter()
+        .map(|&x| x * 3)
+        .take(3)
+        .filter(|x| *x > 6)
+        .collect();
+    println!("{:?}", doubled); // [9]
+
+    // 5 迭代器与迭代器适配器特性：lazy（惰性）
+
+    let v = vec![1, 2, 3, 4, 5];
+    v.iter().for_each(|x| println!("{x}"));
+    // or
+    for x in &v {
+        println!("{x}");
+    }
 }
