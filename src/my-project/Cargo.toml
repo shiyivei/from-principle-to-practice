@@ -1,0 +1,2 @@
+[workspace]
+members = ["c1-lib","c2-lib","c3-bin"]

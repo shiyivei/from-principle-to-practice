@@ -1,0 +1,12 @@
+[package]
+name = "c1-lib"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name ="test_c1"
+path ="src/test_c1.rs"
+
+[dependencies]
