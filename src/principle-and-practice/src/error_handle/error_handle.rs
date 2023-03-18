@@ -2,109 +2,159 @@
 //!
 /**
 ```
-// 1 类型系统保证函数契约
-   fn sum(a: i32, b: i32) -> i32 {
-       a + b
-   }
 
-   // sum(1u32, 2u32) 违反函数契约
+// 1 函数签名中显式声明参数类型
+    fn sum(a: u32, b: u32) -> u32 {
+        a + b
+    }
+    sum(32, 32);
 
-   // 2 断言用于防御
+    let a = 32_u64;
+    // sum(a, 32); // a 是u64 类型，不满足函数约定
 
-   fn extend_vec(v: &mut Vec<i32>, i: i32) {
-       // assert!(v.len() == 5);
-       v.push(i)
-   }
+    // 2 使用Option枚举来包裹可能为空的类型，方便后续处理
 
-   let mut vec = vec![1, 2, 3];
-   extend_vec(&mut vec, 4);
-   extend_vec(&mut vec, 5);
-   // assert_eq!(5, vec[4]);
-   // extend_vec(&mut vec, 6); // panic
+    let v = vec![Some(1), Some(2), Some(3), Some(4), None];
 
-   // 3 Option 使用map在盒内处理
-   let maybe_some_string = Some(String::from("hello, world!"));
-   let maybe_some_len = maybe_some_string.map(|s| s.len());
-   assert_eq!(maybe_some_len, Some(13));
+    let mut v_iter = v.iter();
 
-   fn get_longest(names: Vec<&str>) -> Option<&str> {
-       if names.len() > 0 {
-           let mut shortest = names[0];
-           for name in names.iter() {
-               if name.len() < shortest.len() {
-                   shortest = *name;
-               }
-           }
-           Some(shortest)
-       } else {
-           None
-       }
-   }
+    loop {
+        if let Some(v) = v_iter.next() {
+            match v {
+                Some(v) => println!("{}", v),
+                None => break,
+            }
+        }
+    }
 
-   // 使用match 黑盒处理
-   fn show_shortest(names: Vec<&str>) -> &str {
-       match get_longest(names) {
-           Some(shortest) => shortest,
-           None => "Not Found",
-       }
-   }
+    // 3 使用Result处理错误,自定义错误类型
 
-   assert_eq!(show_shortest(vec!["Uku", "Felipe"]), "Uku");
-   assert_eq!(show_shortest(Vec::new()), "Not Found");
+    use std::error::Error;
+    use std::fmt;
+    use std::fs::File;
+    use std::io::prelude::*;
 
-   // 返回值类型都是Option可以使用链式调用
-   fn double(val: f64) -> f64 {
-       val * 2.
-   }
+    /*
 
-   fn square(val: f64) -> f64 {
-       val.powi(2 as i32)
-   }
+    #[derive(Debug)]
+    enum MyError {
+        OpenFileError(String),
+        ParseFileError(String),
+        ReadFileError(String),
+        // ...
+    }
 
-   fn inverse(val: f64) -> f64 {
-       val * -1.
-   }
+    impl Error for MyError {}
 
-   fn log(val: f64) -> Option<f64> {
-       match val.log2() {
-           x if x.is_normal() => Some(x),
-           _ => None,
-       }
-   }
+    impl fmt::Display for MyError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                MyError::OpenFileError(s) => write!(f, "{}", s),
+                MyError::ParseFileError(s) => write!(f, "{}", s),
+                MyError::ReadFileError(s) => write!(f, "{}", s),
+                // ...
+            }
+        }
+    }
+    */
 
-   fn sqrt(val: f64) -> Option<f64> {
-       match val.sqrt() {
-           x if x.is_normal() => Some(x),
-           _ => None,
-       }
-   }
+    // 使用宏实现 自定义的错误类型
 
-   let number = 20.;
-   let result = Option::from(number)
-       .map(inverse)
-       .map(double)
-       .map(inverse)
-       .and_then(log)
-       .map(square)
-       .and_then(sqrt);
-   match result {
-       Some(x) => println!("x was {:?}", x),
-       None => println!("this failed"),
-   }
+    use thiserror::Error;
+    #[derive(Error, Debug)] // Error 宏
+    #[non_exhaustive]
+    pub enum MyError {
+        #[error("{0}")] // display 属性宏
+        OpenFileError(String),
+        #[error("{0}")] // display 属性宏
+        ParseFileError(String),
+        #[error("{0}")] // display 属性宏
+        ReadFileError(String),
+    }
 
-   // Result
-   use std::num::ParseIntError;
+    fn get_content(path: &str) -> Result<String, MyError> {
+        let file = File::open(path);
 
-   type ParseResult<T> = Result<T, ParseIntError>;
+        match file {
+            Ok(mut file) => {
+                let mut string = String::new();
 
-   fn squares(number_str: &str) -> ParseResult<i32> {
-       number_str.parse::<i32>().map(|n| n.pow(2))
-   }
+                file.read_to_string(&mut string).unwrap();
 
-   match squares("10") {
-       Ok(n) => assert_eq!(100, n),
-       Err(err) => println!("Error: {:?}", err),
-   }
+                println!("{:?}", string);
+
+                Ok(".".to_string())
+            }
+            Err(_) => Err(MyError::OpenFileError("failed to open file".to_string())),
+        }
+    }
+
+    // 这里故意填了未创建的文件名，一定会出错
+    // if let Err(e) = get_content("filename.text") {
+    //     println!("{:?}", e) // OpenFileError("failed to open file") 打印出的错误类型
+    // }
+
+    // 4 恐慌和断言
+
+    match get_content("filename.text") {
+        Ok(filename) => {
+            assert!(filename == "".to_string()); // 断言判断返回值是否为空字符串
+        }
+        Err(e) => panic!("{:?}", e), // 返回错误时程序奔溃
+    }
+
+    // 5 真实环境中的 自定义Error类型
+
+    /*
+
+    #[derive(Debug, Error)]
+    pub enum KvError {
+        #[error("Not found for table: {0},key: {1}")]
+        NotFound(String, String),
+        #[error("Cannot parse command: `{0}`")]
+        InvalidCommand(String),
+        #[error("Cannot convert value {:0} to {1}")]
+        ConvertError(Value, &'static str),
+        #[error("Cannot process command {0} with table: {1}, key: {2}. Error: {}")]
+        StorageError(&'static str, String, String, String),
+
+        #[error("I/O error")]
+        IoError(#[from] std::io::Error),
+
+        //使用第三发库的具体Error类型
+        #[error("Failed to encode protobuf message")]
+        EncodeError(#[from] prost::EncodeError),
+        #[error("Failed to decode protobuf message")]
+        DecodeError(#[from] prost::DecodeError),
+
+        #[error("Internal error: {0}")]
+        Internal(String),
+
+        #[error("Invalid command error")]
+        FmtError(#[from] std::fmt::Error),
+
+        #[error("frame error")]
+        FrameError,
+        #[error("Failed to access sled db")]
+        SledError(#[from] sled::Error),
+
+        // #[error("I/O error")]
+        // IoError(#[from] std::io::Error),
+        #[error("certificate parse error server: {0}, cert: {1}")]
+        CertificateParseError(&'static str, &'static str),
+
+        #[error("TLS error")]
+        TlsError(#[from] tokio_rustls::rustls::TLSError),
+
+        // #[error("Yamux Connection error")]
+        // YamuxConnectionError(#[from] yamux::ConnectionError),
+        #[error("Parse config error")]
+        ConfigError(#[from] toml::de::Error),
+    }
+
+    */
+
+
 ```
 */
 pub fn error_handle() {}

@@ -22,3 +22,4 @@ tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.6", features = ["codec"] }
 v = "0.1.0"
 rand = "0.8.4"
+thiserror = "1.0.40"
