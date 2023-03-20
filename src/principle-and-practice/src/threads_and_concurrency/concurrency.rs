@@ -1,4 +1,9 @@
-// 这里我们为了创建异步线程，所以使用了异步main
+//! 并发编程
+//!
+/**
+
+```
+    // 这里我们为了创建异步线程，所以使用了异步main
 #[tokio::main]
 async fn main() {
     // 线程的创建
@@ -125,3 +130,9 @@ async fn main() {
 
     println!("Result: {}", *counter.lock().unwrap());
 }
+
+
+```
+*/
+
+pub fn threads_and_concurrency() {}
